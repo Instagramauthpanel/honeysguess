@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Honey's Guess</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root { --bg: #080812; --card: #12122a; --border: #252550; --accent: #FFB300; --accent-glow: rgba(255,179,0,0.15); --text: #FFFFFF; --muted: #8888aa; --success: #34D399; --danger: #F87171; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100dvh; overflow-x: hidden; }
+
+.screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; padding: 20px; opacity: 0; transition: opacity 0.3s ease; }
+.screen.active { display: flex; opacity: 1; }
+
+.card { background: linear-gradient(145deg, #161638, #0e0e24); border: 1px solid var(--border); border-radius: 24px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+.btn { font-family: 'Outfit', sans-serif; font-weight: 700; border: none; cursor: pointer; border-radius: 16px; padding: 18px; font-size: 20px; width: 100%; transition: all 0.15s ease; letter-spacing: 0.5px; }
+.btn:active { transform: scale(0.96); }
+.btn-primary { background: linear-gradient(135deg, #FFD54F, #FFB300); color: #000; box-shadow: 0 6px 20px var(--accent-glow); }
+.btn-primary:disabled { background: #2a2a50; color: #555; box-shadow: none; cursor: not-allowed; transform: none; }
+.btn-secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+.btn-secondary:active { background: rgba(255,179,0,0.1); }
+
+.input { font-family: 'Space Mono', monospace; background: rgba(0,0,0,0.5); border: 2px solid var(--border); border-radius: 16px; padding: 20px; color: var(--accent); font-size: 28px; width: 100%; outline: none; text-align: center; -webkit-appearance: none; transition: border-color 0.2s; }
+.input:focus { border-color: var(--accent); }
+.input::placeholder { color: #444; font-family: 'Outfit', sans-serif; font-size: 20px; }
+
+.mode-btn { background: rgba(255,255,255,0.03); border: 2px solid var(--border); color: var(--text); padding: 20px; border-radius: 16px; font-size: 22px; font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
+.mode-btn.selected { border-color: var(--accent); background: rgba(255,179,0,0.1); color: var(--accent); box-shadow: 0 0 25px var(--accent-glow); transform: scale(1.02); }
+
+.guess-item { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; animation: slideDown 0.3s ease; }
+.hint-higher { color: var(--success); font-weight: 800; font-size: 20px; }
+.hint-lower { color: var(--danger); font-weight: 800; font-size: 20px; }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal-box { background: linear-gradient(145deg, #161638, #0e0e24); border: 2px solid var(--border); border-radius: 28px; padding: 36px; width: 100%; max-width: 380px; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0.25; pointer-events: none; z-index: 0; }
+
+@keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.95); } }
+.opp-turn-icon { animation: pulse 2s infinite ease-in-out; }
+</style>
+</head>
+<body>
+
+<div class="orb" style="width:400px;height:400px;background:#FFB300;top:-100px;left:-100px;"></div>
+<div class="orb" style="width:350px;height:350px;background:#FF8F00;bottom:-100px;right:-100px;"></div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="card text-center relative z-10">
+    <h1 class="text-6xl font-black mb-3" style="color:var(--accent); line-height:1.1;">Honey's Guess</h1>
+    <p class="text-[var(--muted)] text-lg mb-10">Pick a secret number. Guess theirs first to win!</p>
+    
+    <input id="name-input" class="input mb-5 font-sans" placeholder="Your Name" style="font-size:22px;" maxlength="10">
+    
+    <button onclick="createRoom()" class="btn btn-primary mb-4 text-xl">
+      <i class="fa-solid fa-plus mr-2"></i>Create Room
+    </button>
+    
+    <div class="flex items-center gap-3 my-5">
+      <div class="flex-1 h-px bg-[var(--border)]"></div>
+      <span class="text-[var(--muted)] text-base uppercase tracking-widest">Or Join</span>
+      <div class="flex-1 h-px bg-[var(--border)]"></div>
+    </div>
+    
+    <div class="flex gap-3">
+      <input id="code-input" class="input font-sans" placeholder="CODE" maxlength="6" style="font-size:20px; text-transform:uppercase; padding: 16px;">
+      <button onclick="joinRoom()" class="btn btn-secondary" style="width:auto; padding:16px 28px; font-size:18px;">Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="screen-lobby" class="screen">
+  <div class="card text-center relative z-10">
+    <p class="text-[var(--muted)] text-sm uppercase tracking-[0.3em] mb-2">Room Code</p>
+    <div class="text-5xl font-black tracking-[0.2em] mb-2" style="color:var(--accent); font-family:'Space Mono',monospace;" id="lobby-code">------</div>
+    <button onclick="copyCode()" class="text-[var(--muted)] text-sm mb-8 hover:text-white transition"><i class="fa-regular fa-copy mr-1"></i>Tap to Copy</button>
+    
+    <div class="flex justify-around mb-8 text-lg">
+      <div><span class="text-[var(--muted)]">You:</span> <span id="lobby-p1" class="font-bold text-white">P1</span></div>
+      <div><span class="text-[var(--muted)]">Opponent:</span> <span id="lobby-p2" class="font-bold text-[var(--muted)]">Waiting...</span></div>
+    </div>
+
+    <div id="mode-section" style="display:none;" class="animate-popIn">
+      <p class="text-white font-bold text-xl mb-4">Select Range</p>
+      <div class="grid grid-cols-2 gap-3 mb-5">
+        <div class="mode-btn" onclick="selectMode(this, 100)">1 - 100</div>
+        <div class="mode-btn" onclick="selectMode(this, 200)">1 - 200</div>
+        <div class="mode-btn" onclick="selectMode(this, 500)">1 - 500</div>
+        <div class="mode-btn" onclick="selectMode(this, 1000)">1 - 1000</div>
+      </div>
+      <button id="start-btn" onclick="startGame()" class="btn btn-primary text-xl" disabled>Start Game</button>
+    </div>
+
+    <div id="lobby-waiting" class="text-[var(--muted)] text-lg mt-4">
+      <i class="fa-solid fa-spinner fa-spin mr-2"></i>Waiting for opponent to join...
+    </div>
+  </div>
+</div>
+
+<!-- PICK NUMBER -->
+<div id="screen-pick" class="screen">
+  <div class="card text-center relative z-10">
+    <div class="text-5xl mb-4"><i class="fa-solid fa-user-secret text-[var(--accent)]"></i></div>
+    <h2 class="text-3xl font-black mb-2">Pick Your Secret</h2>
+    <p class="text-[var(--muted)] text-lg mb-8">Range: <span id="pick-range" class="font-bold text-xl" style="color:var(--accent);">1 - 100</span></p>
+    
+    <input type="number" id="pick-input" class="input mb-6" placeholder="?" inputmode="numeric">
+    
+    <button onclick="confirmNumber()" class="btn btn-primary text-xl">
+      <i class="fa-solid fa-lock mr-2"></i>Lock In Number
+    </button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="screen-game" class="screen" style="justify-content: flex-start; padding-top: 16px;">
+  <div class="w-full max-w-md relative z-10 flex flex-col" style="height: 100dvh;">
+    
+    <div class="flex justify-between items-center mb-4 px-1">
+      <div class="text-base"><span class="text-[var(--muted)]">Your Secret:</span> <span id="game-my-secret" class="font-bold text-lg" style="color:var(--accent);">42</span></div>
+    </div>
+
+    <!-- MY TURN INPUT -->
+    <div id="my-turn-area" class="card mb-4 flex-shrink-0" style="padding: 20px; display:none;">
+      <div class="flex gap-3">
+        <input type="number" id="guess-input" class="input" placeholder="?" inputmode="numeric" style="font-size:28px; padding: 16px;">
+        <button id="guess-btn" onclick="submitGuess()" class="btn btn-primary" style="width: auto; padding: 16px 30px; font-size:20px;">Guess</button>
+      </div>
+    </div>
+
+    <!-- OPPONENT TURN BIG MESSAGE -->
+    <div id="opp-turn-area" class="card mb-4 flex-shrink-0 text-center py-14" style="display:none;">
+      <div class="opp-turn-icon text-6xl mb-5" style="color: var(--muted);"><i class="fa-solid fa-hourglass-half"></i></div>
+      <h2 class="text-3xl font-black" style="color: var(--muted);">Opponent's Turn</h2>
+      <p class="text-[var(--muted)] mt-2 text-lg">Waiting for them to guess...</p>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-1 pb-20" id="history-container">
+      <h3 class="text-[var(--muted)] text-xs uppercase tracking-[0.2em] mb-3 font-bold">Your Guessing History</h3>
+      <div id="my-guess-history">
+        <div class="text-center text-[var(--muted)] py-10 text-lg">Type your first guess above!</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="card text-center relative z-10">
+    <div id="res-icon" class="text-7xl mb-4">🏆</div>
+    <h2 id="res-title" class="text-4xl font-black mb-2" style="color:var(--accent);">You Won!</h2>
+    <p id="res-subtitle" class="text-[var(--muted)] text-lg mb-8">You guessed their number first!</p>
+    
+    <div class="flex justify-around mb-10 text-center">
+      <div>
+        <div class="text-[var(--muted)] text-sm uppercase tracking-widest">Your Secret</div>
+        <div id="res-p1-num" class="text-4xl font-black mt-2" style="font-family:'Space Mono',monospace; color:var(--accent);">?</div>
+      </div>
+      <div>
+        <div class="text-[var(--muted)] text-sm uppercase tracking-widest">Their Secret</div>
+        <div id="res-p2-num" class="text-4xl font-black mt-2" style="font-family:'Space Mono',monospace; color:var(--accent);">?</div>
+      </div>
+    </div>
+
+    <button onclick="playAgain()" class="btn btn-primary mb-3 text-xl"><i class="fa-solid fa-rotate-right mr-2"></i>Play Again</button>
+    <button onclick="goHome()" class="btn btn-secondary text-lg"><i class="fa-solid fa-house mr-2"></i>Home</button>
+  </div>
+</div>
+
+<!-- OPPONENT GUESS POPUP -->
+<div id="modal-opp-guess" class="modal-overlay">
+  <div class="modal-box">
+    <div class="text-[var(--muted)] text-sm uppercase tracking-[0.2em] mb-3">Opponent Guessed</div>
+    <div id="modal-guess-num" class="font-black my-5" style="font-family:'Space Mono',monospace; font-size:64px; color:var(--text);">45</div>
+    <div id="modal-hint-text" class="text-2xl font-bold mb-8">Your number is HIGHER</div>
+    <button onclick="closeOppGuessModal()" class="btn btn-primary text-xl">Okay</button>
+  </div>
+</div>
+
+<!-- DISCONNECT MODAL -->
+<div id="modal-left" class="modal-overlay">
+  <div class="modal-box">
+    <div class="text-6xl mb-4">🚪</div>
+    <h3 class="text-2xl font-bold mb-2">Opponent Left</h3>
+    <p class="text-[var(--muted)] mb-8">They disconnected from the game.</p>
+    <button onclick="goHome()" class="btn btn-primary text-xl">Go Home</button>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCk4m0vOph9eGa9OOWRSgeJ6QFKWjJiAeo",
+  authDomain: "honeys-guess.firebaseapp.com",
+  databaseURL: "https://honeys-guess-default-rtdb.firebaseio.com",
+  projectId: "honeys-guess",
+  storageBucket: "honeys-guess.firebasestorage.app",
+  messagingSenderId: "446449540684",
+  appId: "1:446449540684:web:541c4cab8850808a0ddee9",
+  measurementId: "G-N4DWJGVTN1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let G = {
+  roomCode: null, isHost: false, myName: '', myNumber: 0,
+  maxRange: 100, playerNum: null, selectedMode: null,
+  gameRef: null, listenerAttached: false, presenceRef: null,
+  lastOppGuessKey: null, isSubmitting: false
+};
+
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r = '';
+  for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)];
+  return r;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.opacity = 0;
+  });
+  const el = document.getElementById('screen-' + id);
+  setTimeout(() => {
+    el.classList.add('active');
+    setTimeout(() => el.style.opacity = 1, 20);
+  }, 50);
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--accent);color:var(--accent);padding:14px 28px;border-radius:14px;font-weight:700;font-size:16px;z-index:999;animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow: 0 10px 30px rgba(0,0,0,0.5);';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 2000);
+  setTimeout(() => t.remove(), 2300);
+}
+
+function copyCode() {
+  if (G.roomCode) {
+    navigator.clipboard.writeText(G.roomCode).then(() => toast('Code copied!'));
+  }
+}
+
+function selectMode(el, mode) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  G.selectedMode = mode;
+  document.getElementById('start-btn').disabled = false;
+}
+
+async function createRoom() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) { toast('Enter your name'); return; }
+
+  const code = genCode();
+  try {
+    await db.ref('games/' + code).set({
+      status: 'waiting', range: 0,
+      player1: { name: name, number: 0, guessCount: 0, ready: false },
+      player2: null, currentTurn: 1, guesses: null, winner: null
+    });
+
+    G.roomCode = code; G.isHost = true; G.myName = name; G.playerNum = 1;
+    G.presenceRef = db.ref('games/' + code + '/player1');
+    G.presenceRef.onDisconnect().remove();
+    
+    startListener();
+    showScreen('lobby');
+    document.getElementById('lobby-code').textContent = code;
+    document.getElementById('lobby-p1').textContent = name;
+    document.getElementById('mode-section').style.display = 'none';
+    document.getElementById('lobby-waiting').style.display = 'block';
+    
+    toast('Room created!');
+  } catch (e) { toast('Failed to create'); }
+}
+
+async function joinRoom() {
+  const name = document.getElementById('name-input').value.trim();
+  const code = document.getElementById('code-input').value.trim().toUpperCase();
+  if (!name) { toast('Enter your name'); return; }
+  if (!code || code.length < 4) { toast('Enter valid code'); return; }
+
+  try {
+    const snap = await db.ref('games/' + code).once('value');
+    if (!snap.exists()) { toast('Room not found'); return; }
+    const data = snap.val();
+    if (data.status !== 'waiting') { toast('Game already started'); return; }
+    if (data.player2) { toast('Room is full'); return; }
+
+    await db.ref('games/' + code + '/player2').set({ name: name, number: 0, guessCount: 0, ready: false });
+
+    G.roomCode = code; G.isHost = false; G.myName = name; G.playerNum = 2;
+    G.presenceRef = db.ref('games/' + code + '/player2');
+    G.presenceRef.onDisconnect().remove();
+
+    startListener();
+    showScreen('lobby');
+    document.getElementById('lobby-code').textContent = code;
+    document.getElementById('lobby-p1').textContent = data.player1.name;
+    document.getElementById('lobby-p2').textContent = name;
+    document.getElementById('lobby-p2').style.color = 'var(--text)';
+    document.getElementById('mode-section').style.display = 'none';
+    document.getElementById('lobby-waiting').style.display = 'block';
+    document.getElementById('lobby-waiting').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Waiting for host to start...';
+    
+    toast('Joined room!');
+  } catch (e) { toast('Failed to join'); }
+}
+
+async function startGame() {
+  if (!G.selectedMode) { toast('Select a range first'); return; }
+  try {
+    await db.ref('games/' + G.roomCode).update({ status: 'choosing', range: G.selectedMode });
+  } catch (e) { toast('Error starting'); }
+}
+
+async function confirmNumber() {
+  const num = parseInt(document.getElementById('pick-input').value);
+  if (isNaN(num) || num < 1 || num > G.maxRange) { toast('Enter a valid number 1-' + G.maxRange); return; }
+  
+  G.myNumber = num;
+  try {
+    const updates = {};
+    updates['player' + G.playerNum + '/number'] = num;
+    updates['player' + G.playerNum + '/ready'] = true;
+    
+    const snap = await db.ref('games/' + G.roomCode).once('value');
+    const data = snap.val();
+    const other = G.playerNum === 1 ? data.player2 : data.player1;
+    
+    if (other && other.ready) {
+      updates['status'] = 'playing';
+      updates['currentTurn'] = 1;
+    }
+    
+    await db.ref('games/' + G.roomCode).update(updates);
+    document.getElementById('pick-input').disabled = true;
+    document.getElementById('pick-input').placeholder = "Locked in!";
+    document.getElementById('pick-input').value = "";
+    toast('Number locked!');
+  } catch (e) { toast('Error'); }
+}
+
+let lastData = null;
+
+function startListener() {
+  if (G.listenerAttached) return;
+  G.listenerAttached = true;
+  G.gameRef = db.ref('games/' + G.roomCode);
+  
+  G.gameRef.on('value', (snap) => {
+    if (!snap.exists()) {
+      if (document.querySelector('.screen.active').id !== 'screen-result') { toast('Room closed'); goHome(); }
+      return;
+    }
+    lastData = snap.val();
+    handleState(lastData);
+  });
+}
+
+function handleState(data) {
+  const p1 = data.player1;
+  const p2 = data.player2;
+
+  if (['playing', 'choosing'].includes(data.status)) {
+    if (G.playerNum === 1 && !p2) { document.getElementById('modal-left').classList.add('active'); return; }
+    if (G.playerNum === 2 && !p1) { document.getElementById('modal-left').classList.add('active'); return; }
+  }
+
+  if (data.status === 'waiting') {
+    if (p1 && p2) {
+      document.getElementById('lobby-p2').textContent = G.isHost ? p2.name : p1.name;
+      document.getElementById('lobby-p2').style.color = 'var(--text)';
+      
+      if (G.isHost) {
+        document.getElementById('mode-section').style.display = 'block';
+        document.getElementById('lobby-waiting').style.display = 'none';
+      } else {
+        document.getElementById('lobby-waiting').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Waiting for host to start...';
+      }
+    }
+  }
+
+  if (data.status === 'choosing') {
+    G.maxRange = data.range;
+    const myData = G.playerNum === 1 ? p1 : p2;
+    if (!myData || !myData.ready) {
+      showScreen('pick');
+      document.getElementById('pick-range').textContent = '1 - ' + G.maxRange;
+      document.getElementById('pick-input').max = G.maxRange;
+    } else {
+      showScreen('pick');
+    }
+  }
+
+  if (data.status === 'playing') {
+    if (document.querySelector('.screen.active').id === 'screen-result') return;
+    showScreen('game');
+    updateGameUI(data);
+    checkOpponentGuess(data);
+  }
+
+  if (data.status === 'finished') {
+    if (document.getElementById('modal-opp-guess').classList.contains('active')) {
+      document.getElementById('modal-opp-guess').classList.remove('active');
+    }
+    showResult(data);
+  }
+}
+
+function updateGameUI(data) {
+  const isMyTurn = data.currentTurn === G.playerNum;
+  document.getElementById('game-my-secret').textContent = G.myNumber;
+
+  const myTurnArea = document.getElementById('my-turn-area');
+  const oppTurnArea = document.getElementById('opp-turn-area');
+
+  if (isMyTurn) {
+    myTurnArea.style.display = 'block';
+    oppTurnArea.style.display = 'none';
+    document.getElementById('guess-input').disabled = false;
+    document.getElementById('guess-btn').disabled = false;
+  } else {
+    myTurnArea.style.display = 'none';
+    oppTurnArea.style.display = 'block';
+  }
+
+  const guesses = data.guesses || {};
+  const myGuesses = Object.values(guesses).filter(g => g.playerNum === G.playerNum);
+  
+  // SORT: NEWEST (highest timestamp) AT THE TOP -> OLDEST (lowest timestamp) AT THE BOTTOM
+  myGuesses.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  
+  const historyContainer = document.getElementById('my-guess-history');
+  historyContainer.innerHTML = '';
+  
+  if (myGuesses.length === 0) {
+    historyContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-10 text-lg">Type your first guess above!</div>';
+  } else {
+    const totalGuesses = myGuesses.length;
+    myGuesses.forEach((g, index) => {
+      // Number logic: if total is 5, and index is 0 (newest), it's #5. If index is 4 (oldest), it's #1.
+      const guessNumber = totalGuesses - index;
+      
+      const div = document.createElement('div');
+      div.className = 'guess-item';
+      
+      const guessStr = `<span style="font-family:'Space Mono',monospace; font-size:28px; font-weight:700; color:var(--text);">${g.guess}</span>`;
+      let hintStr = '';
+      if (g.hint === 'higher') hintStr = `<span class="hint-higher"><i class="fa-solid fa-arrow-up mr-2"></i>Higher</span>`;
+      else if (g.hint === 'lower') hintStr = `<span class="hint-lower"><i class="fa-solid fa-arrow-down mr-2"></i>Lower</span>`;
+      else hintStr = `<span style="color:var(--accent); font-weight:800; font-size:20px;">CORRECT!</span>`;
+
+      div.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="text-[var(--muted)] font-bold text-lg" style="min-width: 30px;">#${guessNumber}</div>
+          <div>Guessed ${guessStr}</div>
+        </div>
+        <div>${hintStr}</div>
+      `;
+      historyContainer.appendChild(div);
+    });
+  }
+}
+
+function checkOpponentGuess(data) {
+  const guesses = data.guesses || {};
+  const oppGuesses = Object.entries(guesses).filter(([key, g]) => g.playerNum !== G.playerNum).sort((a,b) => (a[1].timestamp||0) - (b[1].timestamp||0));
+  
+  if (oppGuesses.length > 0) {
+    const [latestKey, latestGuess] = oppGuesses[oppGuesses.length - 1];
+    
+    if (latestKey !== G.lastOppGuessKey) {
+      G.lastOppGuessKey = latestKey;
+      
+      const modal = document.getElementById('modal-opp-guess');
+      document.getElementById('modal-guess-num').textContent = latestGuess.guess;
+      
+      const hintEl = document.getElementById('modal-hint-text');
+      if (latestGuess.hint === 'higher') {
+        hintEl.textContent = 'Your number is HIGHER';
+        hintEl.style.color = 'var(--success)';
+      } else if (latestGuess.hint === 'lower') {
+        hintEl.textContent = 'Your number is LOWER';
+        hintEl.style.color = 'var(--danger)';
+      } else {
+        hintEl.textContent = 'They found it!';
+        hintEl.style.color = 'var(--accent)';
+      }
+      
+      modal.classList.add('active');
+    }
+  }
+}
+
+function closeOppGuessModal() {
+  document.getElementById('modal-opp-guess').classList.remove('active');
+}
+
+async function submitGuess() {
+  if (G.isSubmitting || !lastData || lastData.status !== 'playing' || lastData.currentTurn !== G.playerNum) return;
+  
+  const val = parseInt(document.getElementById('guess-input').value);
+  if (isNaN(val) || val < 1 || val > G.maxRange) { toast('Enter valid number 1-' + G.maxRange); return; }
+
+  G.isSubmitting = true;
+  const guess = val;
+  const oppData = G.playerNum === 1 ? lastData.player2 : lastData.player1;
+  const myData = G.playerNum === 1 ? lastData.player1 : lastData.player2;
+  
+  if (!oppData || !oppData.number) { G.isSubmitting = false; return; }
+
+  let hint = guess === oppData.number ? 'correct' : (guess < oppData.number ? 'higher' : 'lower');
+
+  const guessData = {
+    playerNum: G.playerNum, playerName: G.myName,
+    guess: guess, hint: hint, timestamp: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  try {
+    const updates = {};
+    updates['guesses/' + Date.now()] = guessData;
+    updates['player' + G.playerNum + '/guessCount'] = (myData.guessCount || 0) + 1;
+
+    if (hint === 'correct') {
+      updates['status'] = 'finished';
+      updates['winner'] = G.playerNum;
+    } else {
+      updates['currentTurn'] = G.playerNum === 1 ? 2 : 1;
+    }
+
+    await db.ref('games/' + G.roomCode).update(updates);
+    document.getElementById('guess-input').value = '';
+  } catch (e) { toast('Error'); }
+  
+  G.isSubmitting = false;
+}
+
+function showResult(data) {
+  showScreen('result');
+  const p1 = data.player1 || {}; const p2 = data.player2 || {};
+  const iWon = data.winner === G.playerNum;
+
+  document.getElementById('res-icon').textContent = iWon ? '🏆' : '😢';
+  document.getElementById('res-title').textContent = iWon ? 'You Won!' : 'You Lost!';
+  document.getElementById('res-title').style.color = iWon ? 'var(--accent)' : 'var(--danger)';
+  document.getElementById('res-subtitle').textContent = iWon ? 'You guessed their number first!' : 'They guessed your number first.';
+  document.getElementById('res-p1-num').textContent = p1.number || '?';
+  document.getElementById('res-p2-num').textContent = p2.number || '?';
+
+  if (G.gameRef) { G.gameRef.off(); G.listenerAttached = false; }
+}
+
+async function playAgain() {
+  if (!G.roomCode || !lastData) return;
+  const p1Name = G.playerNum === 1 ? G.myName : (lastData.player1 ? lastData.player1.name : '');
+  const p2Name = G.playerNum === 2 ? G.myName : (lastData.player2 ? lastData.player2.name : '');
+
+  try {
+    await db.ref('games/' + G.roomCode).set({
+      status: 'choosing', range: G.maxRange,
+      player1: { name: p1Name, number: 0, guessCount: 0, ready: false },
+      player2: p2Name ? { name: p2Name, number: 0, guessCount: 0, ready: false } : null,
+      currentTurn: 1, guesses: null, winner: null
+    });
+
+    const path = 'player' + G.playerNum;
+    G.presenceRef = db.ref('games/' + G.roomCode + '/' + path);
+    G.presenceRef.onDisconnect().remove();
+
+    G.myNumber = 0; G.lastOppGuessKey = null; G.isSubmitting = false;
+    document.getElementById('pick-input').disabled = false;
+    document.getElementById('pick-input').value = '';
+    document.getElementById('pick-input').placeholder = '?';
+
+    startListener();
+    showScreen('pick');
+    document.getElementById('pick-range').textContent = '1 - ' + G.maxRange;
+    toast('New round!');
+  } catch (e) { toast('Error'); }
+}
+
+function goHome() {
+  if (G.gameRef) { G.gameRef.off(); G.listenerAttached = false; }
+  if (G.presenceRef) { G.presenceRef.onDisconnect().cancel(); G.presenceRef.remove(); }
+  
+  if (G.roomCode) {
+    db.ref('games/' + G.roomCode).once('value').then(s => {
+      if (s.exists()) {
+        const d = s.val();
+        if (!d.player1 && !d.player2) db.ref('games/' + G.roomCode).remove();
+      }
+    });
+  }
+
+  G = { roomCode:null, isHost:false, myName:'', myNumber:0, maxRange:100, playerNum:null, selectedMode:null, gameRef:null, listenerAttached:false, presenceRef:null, lastOppGuessKey:null, isSubmitting:false };
+  lastData = null;
+
+  document.getElementById('code-input').value = '';
+  document.getElementById('modal-left').classList.remove('active');
+  document.getElementById('modal-opp-guess').classList.remove('active');
+  
+  showScreen('home');
+}
+
+document.getElementById('code-input').addEventListener('input', (e) => {
+  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+});
+</script>
+</body>
+</html>
