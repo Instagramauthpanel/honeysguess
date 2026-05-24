@@ -13,47 +13,38 @@
 :root { --bg: #050510; --card: #0c0c20; --border: #1f1f45; --accent: #FFB300; --accent-glow: rgba(255,179,0,0.2); --text: #FFFFFF; --muted: #7777aa; --success: #34D399; --danger: #F87171; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100dvh; overflow-x: hidden; }
-
 .screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; padding: 20px; opacity: 0; transition: opacity 0.4s ease-in-out; }
 .screen.active { display: flex; opacity: 1; }
-
 .top-bar { position: fixed; top: 0; left: 0; right: 0; padding: 16px 20px; z-index: 20; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, var(--bg), transparent); pointer-events: none; }
 .top-bar > * { pointer-events: auto; }
-
 .btn-leave { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--muted); padding: 10px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(10px); }
 .btn-leave:hover { border-color: var(--danger); color: var(--danger); background: rgba(248,113,113,0.1); }
-
 .card { background: linear-gradient(160deg, #131336, #0a0a1f); border: 1px solid var(--border); border-radius: 28px; padding: 32px; width: 100%; max-width: 420px; box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05); position: relative; overflow: hidden; }
 .card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,179,0,0.03) 0%, transparent 60%); animation: rotate 20s linear infinite; pointer-events: none; }
 @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
 .btn { font-family: 'Outfit', sans-serif; font-weight: 700; border: none; cursor: pointer; border-radius: 16px; padding: 18px; font-size: 20px; width: 100%; transition: all 0.15s ease; letter-spacing: 0.5px; position: relative; overflow: hidden; }
 .btn:active { transform: scale(0.96); }
 .btn-primary { background: linear-gradient(135deg, #FFD54F, #FFB300); color: #000; box-shadow: 0 8px 24px var(--accent-glow); }
 .btn-primary:disabled { background: #252550; color: #555; box-shadow: none; cursor: not-allowed; transform: none; }
 .btn-secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
-
 .input { font-family: 'Space Mono', monospace; background: rgba(0,0,0,0.6); border: 2px solid var(--border); border-radius: 16px; padding: 20px; color: var(--accent); font-size: 28px; width: 100%; outline: none; text-align: center; -webkit-appearance: none; transition: border-color 0.2s, box-shadow 0.2s; }
 .input:focus { border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
 .input::placeholder { color: #444; font-family: 'Outfit', sans-serif; font-size: 20px; }
-
-.mode-btn { background: rgba(255,255,255,0.02); border: 2px solid var(--border); color: var(--text); padding: 22px; border-radius: 18px; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
+.mode-btn { background: rgba(255,255,255,0.02); border: 2px solid var(--border); color: var(--text); padding: 18px 12px; border-radius: 18px; font-size: 20px; font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%; text-align: center; }
 .mode-btn.selected { border-color: var(--accent); background: rgba(255,179,0,0.08); color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); transform: scale(1.03); }
-
 .guess-item { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 18px; padding: 20px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; animation: slideDown 0.3s ease; }
 .hint-higher { color: var(--success); font-weight: 800; font-size: 20px; text-shadow: 0 0 10px rgba(52,211,153,0.3); }
 .hint-lower { color: var(--danger); font-weight: 800; font-size: 20px; text-shadow: 0 0 10px rgba(248,113,113,0.3); }
-
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .modal-overlay.active { display: flex; }
 .modal-box { background: var(--card); border: 1px solid var(--border); border-radius: 32px; padding: 40px; width: 100%; max-width: 380px; text-align: center; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
-
 .orb { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.2; pointer-events: none; z-index: 0; }
-
 @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.95); } }
 .opp-turn-icon { animation: pulse 2s infinite ease-in-out; }
+.word-tile { width: 36px; height: 46px; background: rgba(0,0,0,0.5); border: 2px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: var(--accent); transition: all 0.3s; }
+.word-tile.revealed { border-color: var(--accent); background: rgba(255,179,0,0.1); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 </style>
 </head>
 <body>
@@ -86,18 +77,37 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   <div class="card text-center relative z-10">
     <p class="text-[var(--muted)] text-xs uppercase tracking-[0.3em] mb-2">Room Code</p>
     <div class="text-6xl font-black tracking-[0.2em] mb-2" style="color:var(--accent); font-family:'Space Mono',monospace; text-shadow: 0 0 20px var(--accent-glow);" id="lobby-code">------</div>
-    <button onclick="copyCode()" class="text-[var(--muted)] text-sm mb-10 hover:text-white transition"><i class="fa-regular fa-copy mr-1"></i>Tap to Copy</button>
-    <div class="flex justify-around mb-10 text-xl">
+    <button onclick="copyCode()" class="text-[var(--muted)] text-sm mb-8 hover:text-white transition"><i class="fa-regular fa-copy mr-1"></i>Tap to Copy</button>
+    <div class="flex justify-around mb-8 text-xl">
       <div><span class="text-[var(--muted)]">You:</span> <span id="lobby-me-name" class="font-bold text-white">?</span></div>
       <div><span class="text-[var(--muted)]">Opponent:</span> <span id="lobby-opp-name" class="font-bold text-[var(--muted)]">Waiting...</span></div>
     </div>
-    <div id="mode-section" style="display:none;" class="animate-popIn">
-      <p class="text-white font-bold text-2xl mb-5">Select Range</p>
-      <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="mode-btn" onclick="selectMode(this, 100)">1 - 100</div>
-        <div class="mode-btn" onclick="selectMode(this, 200)">1 - 200</div>
-        <div class="mode-btn" onclick="selectMode(this, 500)">1 - 500</div>
-        <div class="mode-btn" onclick="selectMode(this, 1000)">1 - 1000</div>
+    <div id="mode-section" style="display:none;">
+      <div class="flex gap-3 mb-6">
+        <button id="mode-toggle-num" class="mode-btn selected flex-1" onclick="setGameMode('number')"><i class="fa-solid fa-hashtag mr-2"></i>Number</button>
+        <button id="mode-toggle-word" class="mode-btn flex-1" onclick="setGameMode('word')"><i class="fa-solid fa-font mr-2"></i>Word</button>
+      </div>
+      <div id="num-options">
+        <p class="text-white font-bold text-xl mb-4">Select Range</p>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+          <div class="mode-btn" onclick="selectNumMode(this, 100)">1 - 100</div>
+          <div class="mode-btn" onclick="selectNumMode(this, 200)">1 - 200</div>
+          <div class="mode-btn" onclick="selectNumMode(this, 500)">1 - 500</div>
+          <div class="mode-btn" onclick="selectNumMode(this, 1000)">1 - 1000</div>
+        </div>
+      </div>
+      <div id="word-options" style="display:none;">
+        <p class="text-white font-bold text-xl mb-4">Word Length</p>
+        <div class="grid grid-cols-4 gap-3 mb-6">
+          <div class="mode-btn" onclick="selectWordMode(this, 3)">3</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 4)">4</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 5)">5</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 6)">6</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 7)">7</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 8)">8</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 9)">9</div>
+          <div class="mode-btn" onclick="selectWordMode(this, 10)">10</div>
+        </div>
       </div>
       <button id="start-btn" onclick="startGame()" class="btn btn-primary text-xl" disabled>Start Game</button>
     </div>
@@ -117,13 +127,25 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   </div>
 </div>
 
-<!-- GAME -->
+<!-- PICK WORD -->
+<div id="screen-pick-word" class="screen">
+  <div class="top-bar"><button class="btn-leave" onclick="leaveRoom()"><i class="fa-solid fa-arrow-left mr-2"></i>Leave</button></div>
+  <div class="card text-center relative z-10">
+    <div class="text-6xl mb-6"><i class="fa-solid fa-spell-check text-[var(--accent)]"></i></div>
+    <h2 class="text-4xl font-black mb-3">Pick Your Word</h2>
+    <p class="text-[var(--muted)] text-xl mb-4">A <span id="pick-word-len" class="font-bold text-2xl" style="color:var(--accent);">5</span>-letter English word</p>
+    <input id="pick-word-input" class="input mb-3" placeholder="TYPE WORD" maxlength="10" style="text-transform:uppercase; font-size:24px; padding:16px;">
+    <p id="pick-word-error" class="text-[var(--danger)] text-sm mb-4 h-5"></p>
+    <button id="pick-word-btn" onclick="confirmWord()" class="btn btn-primary text-xl"><i class="fa-solid fa-lock mr-2"></i>Lock In Word</button>
+  </div>
+</div>
+
+<!-- GAME (NUMBER) -->
 <div id="screen-game" class="screen" style="justify-content: flex-start; padding-top: 0;">
   <div class="top-bar">
     <button class="btn-leave" onclick="leaveRoom()"><i class="fa-solid fa-arrow-left mr-2"></i>Leave</button>
     <div class="text-base"><span class="text-[var(--muted)]">Your Secret:</span> <span id="game-my-secret" class="font-bold text-lg" style="color:var(--accent);">?</span></div>
   </div>
-  
   <div class="w-full max-w-md relative z-10 flex flex-col pt-20 px-4" style="height: 100dvh;">
     <div id="my-turn-area" class="card mb-4 flex-shrink-0" style="padding: 20px; display:none; border-radius: 20px;">
       <div class="flex gap-3">
@@ -131,18 +153,52 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
         <button id="guess-btn" onclick="submitGuess()" class="btn btn-primary" style="width: auto; padding: 14px 30px; font-size:20px; border-radius: 14px;">Guess</button>
       </div>
     </div>
-
     <div id="opp-turn-area" class="card mb-4 flex-shrink-0 text-center py-16" style="display:none; border-radius: 20px;">
       <div class="opp-turn-icon text-7xl mb-6" style="color: var(--muted);"><i class="fa-solid fa-hourglass-half"></i></div>
       <h2 class="text-4xl font-black" style="color: var(--muted);">Opponent's Turn</h2>
       <p class="text-[var(--muted)] mt-3 text-xl">Waiting for them to guess...</p>
     </div>
-
     <div class="flex-1 overflow-y-auto pb-20" id="history-container">
       <h3 class="text-[var(--muted)] text-xs uppercase tracking-[0.2em] mb-4 font-bold">Your Guessing History</h3>
       <div id="my-guess-history">
         <div class="text-center text-[var(--muted)] py-12 text-xl">Type your first guess above!</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME (WORD) -->
+<div id="screen-game-word" class="screen" style="justify-content: flex-start; padding-top: 0;">
+  <div class="top-bar">
+    <button class="btn-leave" onclick="leaveRoom()"><i class="fa-solid fa-arrow-left mr-2"></i>Leave</button>
+    <div class="text-base"><span class="text-[var(--muted)]">Your Word:</span> <span id="word-my-secret" class="font-bold text-lg tracking-widest" style="color:var(--accent); font-family:'Space Mono',monospace;">?</span></div>
+  </div>
+  <div class="w-full max-w-md relative z-10 flex flex-col pt-20 px-4" style="height: 100dvh;">
+    <!-- Their word (you guess) -->
+    <div class="card mb-3 flex-shrink-0" style="padding: 16px 20px; border-radius: 18px;">
+      <p class="text-[var(--muted)] text-xs uppercase tracking-widest mb-3 font-bold">Their Word</p>
+      <div id="word-tiles" class="flex gap-2 justify-center flex-wrap"></div>
+    </div>
+
+    <!-- My turn area -->
+    <div id="word-my-turn-area" class="card mb-3 flex-shrink-0" style="padding: 16px; display:none; border-radius: 18px;">
+      <p class="text-[var(--accent)] text-sm font-bold text-center mb-3"><i class="fa-solid fa-keyboard mr-1"></i> Type a letter</p>
+      <div class="flex gap-3">
+        <input type="text" id="letter-input" class="input" placeholder="?" maxlength="1" style="font-size:28px; padding: 14px; border-radius: 14px; text-transform:uppercase;">
+        <button id="letter-btn" onclick="submitLetterFromInput()" class="btn btn-primary" style="width: auto; padding: 14px 30px; font-size:20px; border-radius: 14px;">Guess</button>
+      </div>
+    </div>
+
+    <!-- Opp turn area -->
+    <div id="word-opp-turn-area" class="card mb-3 flex-shrink-0 text-center py-10" style="display:none; border-radius: 18px;">
+      <div class="opp-turn-icon text-5xl mb-4" style="color: var(--muted);"><i class="fa-solid fa-hourglass-half"></i></div>
+      <h2 class="text-2xl font-black" style="color: var(--muted);">Opponent's Turn</h2>
+    </div>
+
+    <!-- My word (they guess) -->
+    <div class="card flex-shrink-0" style="padding: 16px 20px; border-radius: 18px;">
+      <p class="text-[var(--muted)] text-xs uppercase tracking-widest mb-3 font-bold">Your Word</p>
+      <div id="word-my-tiles" class="flex gap-2 justify-center flex-wrap"></div>
     </div>
   </div>
 </div>
@@ -168,13 +224,35 @@ body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-se
   </div>
 </div>
 
-<!-- OPPONENT GUESS POPUP -->
+<!-- OPPONENT GUESS POPUP (NUMBER) -->
 <div id="modal-opp-guess" class="modal-overlay">
   <div class="modal-box">
     <div class="text-[var(--muted)] text-sm uppercase tracking-[0.2em] mb-3">Opponent Guessed</div>
     <div id="modal-guess-num" class="font-black my-6" style="font-family:'Space Mono',monospace; font-size:72px; color:var(--text); text-shadow: 0 0 30px rgba(255,255,255,0.2);">45</div>
     <div id="modal-hint-text" class="text-3xl font-bold mb-10">Your number is HIGHER</div>
-    <button onclick="closeOppGuessModal()" class="btn btn-primary text-xl">Okay</button>
+    <button onclick="closeOppGuessModal()" class="btn btn-primary text-xl">OK</button>
+  </div>
+</div>
+
+<!-- MY LETTER GUESS POPUP (WORD) -->
+<div id="modal-my-letter" class="modal-overlay">
+  <div class="modal-box">
+    <div class="text-[var(--muted)] text-sm uppercase tracking-[0.2em] mb-3">You Guessed</div>
+    <div id="my-letter-char" class="font-black my-6" style="font-family:'Space Mono',monospace; font-size:80px; color:var(--text); text-shadow: 0 0 30px rgba(255,255,255,0.2);">A</div>
+    <div id="my-letter-hint" class="text-2xl font-bold mb-4">Wrong! Not in their word.</div>
+    <div id="my-letter-positions" class="flex gap-2 justify-center mb-10"></div>
+    <button onclick="closeMyLetterModal()" class="btn btn-primary text-xl">OK</button>
+  </div>
+</div>
+
+<!-- OPPONENT LETTER POPUP (WORD) -->
+<div id="modal-opp-letter" class="modal-overlay">
+  <div class="modal-box">
+    <div class="text-[var(--muted)] text-sm uppercase tracking-[0.2em] mb-3">Opponent Guessed</div>
+    <div id="modal-letter-char" class="font-black my-6" style="font-family:'Space Mono',monospace; font-size:80px; color:var(--text); text-shadow: 0 0 30px rgba(255,255,255,0.2);">A</div>
+    <div id="modal-letter-hint" class="text-2xl font-bold mb-4">Wrong! Not in your word.</div>
+    <div id="modal-letter-positions" class="flex gap-2 justify-center mb-10"></div>
+    <button onclick="closeOppLetterModal()" class="btn btn-primary text-xl">OK</button>
   </div>
 </div>
 
@@ -202,20 +280,33 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let G = { roomCode: null, isHost: false, myName: '', maxRange: 100, playerNum: null, selectedMode: null, gameRef: null, listenerAttached: false, presenceRef: null, lastOppGuessKey: null, isSubmitting: false };
+let G = { roomCode: null, isHost: false, myName: '', maxRange: 100, wordLength: 5, gameMode: 'number', playerNum: null, selectedMode: null, selectedWordLen: null, gameRef: null, listenerAttached: false, presenceRef: null, lastOppGuessKey: null, lastOppLetterKey: null, isSubmitting: false };
 
 function genCode() { const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let r = ''; for (let i = 0; i < 6; i++) r += c[Math.floor(Math.random() * c.length)]; return r; }
 function showScreen(id) { document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.opacity = 0; }); const el = document.getElementById('screen-' + id); setTimeout(() => { el.classList.add('active'); setTimeout(() => el.style.opacity = 1, 20); }, 50); }
 function toast(msg) { const t = document.createElement('div'); t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--accent);color:var(--accent);padding:14px 28px;border-radius:14px;font-weight:700;font-size:16px;z-index:999;animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);box-shadow: 0 10px 30px rgba(0,0,0,0.5);'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 2000); setTimeout(() => t.remove(), 2300); }
 function copyCode() { if (G.roomCode) navigator.clipboard.writeText(G.roomCode).then(() => toast('Code copied!')); }
-function selectMode(el, mode) { document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); G.selectedMode = mode; document.getElementById('start-btn').disabled = false; }
+
+function setGameMode(mode) {
+  G.gameMode = mode;
+  document.getElementById('mode-toggle-num').classList.toggle('selected', mode === 'number');
+  document.getElementById('mode-toggle-word').classList.toggle('selected', mode === 'word');
+  document.getElementById('num-options').style.display = mode === 'number' ? 'block' : 'none';
+  document.getElementById('word-options').style.display = mode === 'word' ? 'block' : 'none';
+  document.getElementById('start-btn').disabled = true;
+  G.selectedMode = null; G.selectedWordLen = null;
+  document.querySelectorAll('#num-options .mode-btn, #word-options .mode-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function selectNumMode(el, mode) { document.querySelectorAll('#num-options .mode-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); G.selectedMode = mode; document.getElementById('start-btn').disabled = false; }
+function selectWordMode(el, len) { document.querySelectorAll('#word-options .mode-btn').forEach(b => b.classList.remove('selected')); el.classList.add('selected'); G.selectedWordLen = len; document.getElementById('start-btn').disabled = false; }
 
 async function createRoom() {
   const name = document.getElementById('name-input').value.trim();
   if (!name) { toast('Enter your name'); return; }
   const code = genCode();
   try {
-    await db.ref('games/' + code).set({ status: 'waiting', range: 0, player1: { name: name, number: 0, guessCount: 0, ready: false }, player2: null, currentTurn: 1, guesses: null, winner: null });
+    await db.ref('games/' + code).set({ status: 'waiting', gameMode: 'number', range: 0, wordLength: 0, player1: { name: name, number: 0, word: '', ready: false }, player2: null, currentTurn: 1, guesses: null, winner: null });
     G.roomCode = code; G.isHost = true; G.myName = name; G.playerNum = 1;
     G.presenceRef = db.ref('games/' + code + '/player1');
     G.presenceRef.onDisconnect().remove();
@@ -234,7 +325,7 @@ async function joinRoom() {
     const data = snap.val();
     if (data.status !== 'waiting') { toast('Game already started'); return; }
     if (data.player2) { toast('Room is full'); return; }
-    await db.ref('games/' + code + '/player2').set({ name: name, number: 0, guessCount: 0, ready: false });
+    await db.ref('games/' + code + '/player2').set({ name: name, number: 0, word: '', ready: false });
     G.roomCode = code; G.isHost = false; G.myName = name; G.playerNum = 2;
     G.presenceRef = db.ref('games/' + code + '/player2');
     G.presenceRef.onDisconnect().remove();
@@ -242,14 +333,42 @@ async function joinRoom() {
   } catch (e) { toast('Failed to join'); }
 }
 
-async function startGame() { if (!G.selectedMode) { toast('Select a range first'); return; } try { await db.ref('games/' + G.roomCode).update({ status: 'choosing', range: G.selectedMode }); } catch (e) { toast('Error starting'); } }
+async function startGame() {
+  if (G.gameMode === 'number' && !G.selectedMode) { toast('Select a range first'); return; }
+  if (G.gameMode === 'word' && !G.selectedWordLen) { toast('Select word length first'); return; }
+  try {
+    await db.ref('games/' + G.roomCode).update({ status: 'choosing', gameMode: G.gameMode, range: G.selectedMode || 0, wordLength: G.selectedWordLen || 0 });
+  } catch (e) { toast('Error starting'); }
+}
 
 async function confirmNumber() {
   const num = parseInt(document.getElementById('pick-input').value);
   if (isNaN(num) || num < 1 || num > G.maxRange) { toast('Enter a valid number 1-' + G.maxRange); return; }
+  try { await db.ref('games/' + G.roomCode + '/player' + G.playerNum).update({ number: num, ready: true }); } catch (e) { toast('Error'); }
+}
+
+async function confirmWord() {
+  const word = document.getElementById('pick-word-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('pick-word-error');
+  errEl.textContent = '';
+  
+  if (word.length !== G.wordLength) { errEl.textContent = `Word must be exactly ${G.wordLength} letters!`; return; }
+  if (!/^[A-Z]+$/.test(word)) { errEl.textContent = 'Only letters allowed!'; return; }
+
+  document.getElementById('pick-word-btn').disabled = true;
+  errEl.textContent = 'Checking dictionary...';
+  errEl.style.color = 'var(--muted)';
+
   try {
-    await db.ref('games/' + G.roomCode + '/player' + G.playerNum).update({ number: num, ready: true });
-  } catch (e) { toast('Error'); }
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`);
+    if (!res.ok) { errEl.textContent = 'Not a valid English word! Try another.'; errEl.style.color = 'var(--danger)'; document.getElementById('pick-word-btn').disabled = false; return; }
+    
+    await db.ref('games/' + G.roomCode + '/player' + G.playerNum).update({ word: word, ready: true });
+  } catch (e) {
+    errEl.textContent = 'Network error. Try again.';
+    errEl.style.color = 'var(--danger)';
+    document.getElementById('pick-word-btn').disabled = false;
+  }
 }
 
 let lastData = null;
@@ -261,13 +380,11 @@ function startListener() {
   
   G.gameRef.on('value', (snap) => {
     if (!snap.exists()) {
-      // Host deleted the room
       if (document.querySelector('.screen.active').id !== 'screen-result') {
         document.getElementById('modal-left').classList.add('active');
       }
       return;
     }
-    
     lastData = snap.val();
     handleState(lastData);
   });
@@ -276,12 +393,9 @@ function startListener() {
 function handleState(data) {
   const p1 = data.player1;
   const p2 = data.player2;
-
-  // 100% REALTIME PERSPECTIVE MAPPING
   const meData = G.playerNum === 1 ? p1 : p2;
   const oppData = G.playerNum === 1 ? p2 : p1;
 
-  // 2. Check if opponent disconnected during active game
   if (!oppData && ['choosing', 'playing'].includes(data.status)) {
     document.getElementById('modal-left').classList.add('active');
     return;
@@ -308,62 +422,82 @@ function handleState(data) {
 
   if (data.status === 'choosing') {
     G.maxRange = data.range;
-    G.lastOppGuessKey = null; // Reset popup tracker for new rounds
-    
-    // RACE CONDITION FIX: Force start if both ready
+    G.wordLength = data.wordLength;
+    G.gameMode = data.gameMode;
+    G.lastOppGuessKey = null; 
+    G.lastOppLetterKey = null;
+
     if (p1 && p1.ready && p2 && p2.ready) {
       db.ref('games/' + G.roomCode).update({ status: 'playing', currentTurn: 1 });
       return; 
     }
 
-    // FIX: Strictly enforce UI based on database ready state
     if (!meData || !meData.ready) {
-      showScreen('pick');
-      document.getElementById('pick-range').textContent = '1 - ' + G.maxRange;
-      document.getElementById('pick-input').disabled = false;
-      document.getElementById('pick-input').value = '';
-      document.getElementById('pick-input').placeholder = '?';
-      document.getElementById('pick-btn').disabled = false;
+      if (G.gameMode === 'word') {
+        showScreen('pick-word');
+        document.getElementById('pick-word-len').textContent = G.wordLength;
+        document.getElementById('pick-word-input').disabled = false;
+        document.getElementById('pick-word-input').value = '';
+        document.getElementById('pick-word-btn').disabled = false;
+        document.getElementById('pick-word-error').textContent = '';
+      } else {
+        showScreen('pick');
+        document.getElementById('pick-range').textContent = '1 - ' + G.maxRange;
+        document.getElementById('pick-input').disabled = false;
+        document.getElementById('pick-input').value = '';
+        document.getElementById('pick-btn').disabled = false;
+      }
     } else {
-      showScreen('pick');
-      document.getElementById('pick-input').disabled = true;
-      document.getElementById('pick-input').value = '';
-      document.getElementById('pick-input').placeholder = "Locked in!";
-      document.getElementById('pick-btn').disabled = true;
+      if (G.gameMode === 'word') {
+        showScreen('pick-word');
+        document.getElementById('pick-word-input').disabled = true;
+        document.getElementById('pick-word-input').value = '';
+        document.getElementById('pick-word-input').placeholder = "Locked in!";
+        document.getElementById('pick-word-btn').disabled = true;
+        document.getElementById('pick-word-error').textContent = '';
+      } else {
+        showScreen('pick');
+        document.getElementById('pick-input').disabled = true;
+        document.getElementById('pick-input').value = '';
+        document.getElementById('pick-input').placeholder = "Locked in!";
+        document.getElementById('pick-btn').disabled = true;
+      }
     }
   }
 
   if (data.status === 'playing') {
-    showScreen('game');
-    
-    // 100% Realtime Secret Mapping
-    document.getElementById('game-my-secret').textContent = meData.number || '?';
-    
-    const isMyTurn = data.currentTurn === G.playerNum;
-    if (isMyTurn) {
-      document.getElementById('my-turn-area').style.display = 'block'; document.getElementById('opp-turn-area').style.display = 'none';
-      document.getElementById('guess-input').disabled = false; document.getElementById('guess-btn').disabled = false;
+    if (G.gameMode === 'word') {
+      showScreen('game-word');
+      renderWordGame(data, meData, oppData);
     } else {
-      document.getElementById('my-turn-area').style.display = 'none'; document.getElementById('opp-turn-area').style.display = 'block';
+      showScreen('game');
+      document.getElementById('game-my-secret').textContent = meData.number || '?';
+      const isMyTurn = data.currentTurn === G.playerNum;
+      if (isMyTurn) {
+        document.getElementById('my-turn-area').style.display = 'block'; document.getElementById('opp-turn-area').style.display = 'none';
+        document.getElementById('guess-input').disabled = false; document.getElementById('guess-btn').disabled = false;
+      } else {
+        document.getElementById('my-turn-area').style.display = 'none'; document.getElementById('opp-turn-area').style.display = 'block';
+      }
+      renderGuessHistory(data.guesses);
+      checkOpponentGuess(data.guesses, meData);
     }
-
-    renderGuessHistory(data.guesses);
-    checkOpponentGuess(data.guesses, meData);
   }
 
   if (data.status === 'finished') {
     document.getElementById('modal-opp-guess').classList.remove('active');
+    document.getElementById('modal-opp-letter').classList.remove('active');
+    document.getElementById('modal-my-letter').classList.remove('active');
     showResult(data, meData, oppData);
   }
 }
 
+// NUMBER MODE FUNCTIONS
 function renderGuessHistory(guesses) {
   const myGuesses = Object.values(guesses || {}).filter(g => g.playerNum === G.playerNum);
   myGuesses.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-  
   const historyContainer = document.getElementById('my-guess-history');
   historyContainer.innerHTML = '';
-  
   if (myGuesses.length === 0) {
     historyContainer.innerHTML = '<div class="text-center text-[var(--muted)] py-12 text-xl">Type your first guess above!</div>';
   } else {
@@ -390,8 +524,6 @@ function checkOpponentGuess(guesses, meData) {
       G.lastOppGuessKey = latestKey;
       const modal = document.getElementById('modal-opp-guess');
       document.getElementById('modal-guess-num').textContent = latestGuess.guess;
-      
-      // Calculate hint directly from live DB data
       const hint = latestGuess.guess === meData.number ? 'correct' : (latestGuess.guess < meData.number ? 'higher' : 'lower');
       const hintEl = document.getElementById('modal-hint-text');
       if (hint === 'higher') { hintEl.textContent = 'Your number is HIGHER'; hintEl.style.color = 'var(--success)'; hintEl.style.textShadow = '0 0 20px rgba(52,211,153,0.4)'; }
@@ -409,15 +541,11 @@ async function submitGuess() {
   const val = parseInt(document.getElementById('guess-input').value);
   if (isNaN(val) || val < 1 || val > G.maxRange) { toast('Enter valid number 1-' + G.maxRange); return; }
   G.isSubmitting = true;
-  
-  // Strict mapping to get opponent's live number
   const oppData = G.playerNum === 1 ? lastData.player2 : lastData.player1;
   const myData = G.playerNum === 1 ? lastData.player1 : lastData.player2;
   if (!oppData || !oppData.number) { G.isSubmitting = false; return; }
-  
   let hint = val === oppData.number ? 'correct' : (val < oppData.number ? 'higher' : 'lower');
   const guessData = { playerNum: G.playerNum, playerName: G.myName, guess: val, hint: hint, timestamp: firebase.database.ServerValue.TIMESTAMP };
-  
   try {
     const updates = {}; updates['guesses/' + Date.now()] = guessData; updates['player' + G.playerNum + '/guessCount'] = (myData.guessCount || 0) + 1;
     if (hint === 'correct') { updates['status'] = 'finished'; updates['winner'] = G.playerNum; } else { updates['currentTurn'] = G.playerNum === 1 ? 2 : 1; }
@@ -426,19 +554,164 @@ async function submitGuess() {
   G.isSubmitting = false;
 }
 
+// WORD MODE FUNCTIONS
+function renderWordGame(data, meData, oppData) {
+  if (!oppData || !meData) return;
+  
+  document.getElementById('word-my-secret').textContent = meData.word || '?';
+
+  const oppWordArr = oppData.word.split('');
+  const myGuesses = Object.values(data.guesses || {}).filter(g => g.playerNum === G.playerNum);
+  const myLetters = myGuesses.map(g => g.letter);
+  
+  const oppTilesEl = document.getElementById('word-tiles');
+  oppTilesEl.innerHTML = '';
+  oppWordArr.forEach(letter => {
+    const div = document.createElement('div');
+    div.className = 'word-tile';
+    if (myLetters.includes(letter)) {
+      div.classList.add('revealed');
+      div.textContent = letter;
+    }
+    oppTilesEl.appendChild(div);
+  });
+
+  const myWordArr = meData.word.split('');
+  const oppGuesses = Object.values(data.guesses || {}).filter(g => g.playerNum !== G.playerNum);
+  const oppLetters = oppGuesses.map(g => g.letter);
+  
+  const myTilesEl = document.getElementById('word-my-tiles');
+  myTilesEl.innerHTML = '';
+  myWordArr.forEach(letter => {
+    const div = document.createElement('div');
+    div.className = 'word-tile revealed';
+    div.textContent = letter;
+    if (!oppLetters.includes(letter)) div.style.opacity = '0.4';
+    else div.style.opacity = '1';
+    myTilesEl.appendChild(div);
+  });
+
+  const isMyTurn = data.currentTurn === G.playerNum;
+  if (isMyTurn) {
+    document.getElementById('word-my-turn-area').style.display = 'block';
+    document.getElementById('word-opp-turn-area').style.display = 'none';
+  } else {
+    document.getElementById('word-my-turn-area').style.display = 'none';
+    document.getElementById('word-opp-turn-area').style.display = 'block';
+  }
+
+  checkOpponentLetter(oppGuesses, meData.word);
+}
+
+function checkOpponentLetter(oppGuesses, myWord) {
+  if (oppGuesses.length > 0) {
+    const latestGuess = oppGuesses[oppGuesses.length - 1];
+    const guessKey = latestGuess.timestamp + '_' + latestGuess.letter;
+    if (guessKey !== G.lastOppLetterKey) {
+      G.lastOppLetterKey = guessKey;
+      const modal = document.getElementById('modal-opp-letter');
+      document.getElementById('modal-letter-char').textContent = latestGuess.letter;
+      
+      const isCorrect = myWord.includes(latestGuess.letter);
+      const hintEl = document.getElementById('modal-letter-hint');
+      const posEl = document.getElementById('modal-letter-positions');
+      
+      posEl.innerHTML = '';
+      if (isCorrect) {
+        hintEl.textContent = 'Correct! It\'s in your word.';
+        hintEl.style.color = 'var(--success)';
+        myWord.split('').forEach(l => {
+          const d = document.createElement('div');
+          d.className = 'word-tile revealed';
+          d.style.width = '30px'; d.style.height = '38px'; d.style.fontSize = '18px';
+          d.textContent = l === latestGuess.letter ? l : '';
+          if (l !== latestGuess.letter) { d.style.borderColor = 'var(--border)'; d.style.opacity = '0.3'; }
+          posEl.appendChild(d);
+        });
+      } else {
+        hintEl.textContent = 'Wrong! Not in your word.';
+        hintEl.style.color = 'var(--danger)';
+      }
+      modal.classList.add('active');
+    }
+  }
+}
+
+function closeOppLetterModal() { document.getElementById('modal-opp-letter').classList.remove('active'); }
+function closeMyLetterModal() { document.getElementById('modal-my-letter').classList.remove('active'); }
+
+function submitLetterFromInput() {
+  const inputEl = document.getElementById('letter-input');
+  const letter = inputEl.value.trim().toUpperCase();
+  if (!letter || letter.length !== 1 || !/[A-Z]/.test(letter)) { toast('Enter a valid letter'); return; }
+  inputEl.value = '';
+  submitLetter(letter);
+}
+
+async function submitLetter(letter) {
+  if (G.isSubmitting || !lastData || lastData.status !== 'playing' || lastData.currentTurn !== G.playerNum) return;
+  G.isSubmitting = true;
+  
+  const oppData = G.playerNum === 1 ? lastData.player2 : lastData.player1;
+  if (!oppData || !oppData.word) { G.isSubmitting = false; return; }
+  
+  const oppWordArr = oppData.word.split('');
+  const myPrevGuesses = Object.values(lastData.guesses || {}).filter(g => g.playerNum === G.playerNum);
+  const myPrevLetters = myPrevGuesses.map(g => g.letter);
+  
+  if (myPrevLetters.includes(letter)) { toast('You already guessed that letter!'); G.isSubmitting = false; return; } 
+  
+  const isCorrect = oppWordArr.includes(letter);
+  const allGuessed = [...myPrevLetters, letter];
+  const isWin = oppWordArr.every(l => allGuessed.includes(l));
+
+  if (!isWin) {
+    const myModal = document.getElementById('modal-my-letter');
+    document.getElementById('my-letter-char').textContent = letter;
+    const myHintEl = document.getElementById('my-letter-hint');
+    const myPosEl = document.getElementById('my-letter-positions');
+    
+    myPosEl.innerHTML = '';
+    if (isCorrect) {
+      myHintEl.textContent = 'Correct! It\'s in their word.';
+      myHintEl.style.color = 'var(--success)';
+      oppWordArr.forEach(l => {
+        const d = document.createElement('div');
+        d.className = 'word-tile revealed';
+        d.style.width = '30px'; d.style.height = '38px'; d.style.fontSize = '18px';
+        d.textContent = l === letter ? l : '';
+        if (l !== letter) { d.style.borderColor = 'var(--border)'; d.style.opacity = '0.3'; }
+        myPosEl.appendChild(d);
+      });
+    } else {
+      myHintEl.textContent = 'Wrong! Not in their word.';
+      myHintEl.style.color = 'var(--danger)';
+    }
+    myModal.classList.add('active');
+  }
+
+  const guessData = { playerNum: G.playerNum, letter: letter, timestamp: firebase.database.ServerValue.TIMESTAMP };
+  
+  try {
+    const updates = {};
+    updates['guesses/' + Date.now()] = guessData;
+    if (isWin) { updates['status'] = 'finished'; updates['winner'] = G.playerNum; }
+    else { updates['currentTurn'] = G.playerNum === 1 ? 2 : 1; }
+    await db.ref('games/' + G.roomCode).update(updates);
+  } catch (e) { toast('Error'); }
+  G.isSubmitting = false;
+}
+
+// RESULT & NAVIGATION
 function showResult(data, meData, oppData) {
   showScreen('result');
   const iWon = data.winner === G.playerNum;
   document.getElementById('res-icon').textContent = iWon ? '🏆' : '😢';
   document.getElementById('res-title').textContent = iWon ? 'You Won!' : 'You Lost!';
   document.getElementById('res-title').style.color = iWon ? 'var(--accent)' : 'var(--danger)';
-  document.getElementById('res-subtitle').textContent = iWon ? 'You guessed their number first!' : 'They guessed your number first.';
-  
-  // Strict Realtime Result Mapping
-  document.getElementById('res-me-num').textContent = meData.number || '?'; 
-  document.getElementById('res-opp-num').textContent = oppData.number || '?';
-  
-  // FIX: Do NOT turn off the listener here! Let it run so "Play Again" works instantly for both.
+  document.getElementById('res-subtitle').textContent = iWon ? (data.gameMode === 'word' ? 'You guessed their word first!' : 'You guessed their number first!') : (data.gameMode === 'word' ? 'They guessed your word first.' : 'They guessed your number first.');
+  document.getElementById('res-me-num').textContent = data.gameMode === 'word' ? (meData.word || '?') : (meData.number || '?'); 
+  document.getElementById('res-opp-num').textContent = data.gameMode === 'word' ? (oppData.word || '?') : (oppData.number || '?');
 }
 
 async function playAgain() {
@@ -448,8 +721,7 @@ async function playAgain() {
   const p1Name = G.playerNum === 1 ? meData.name : oppData.name;
   const p2Name = G.playerNum === 2 ? meData.name : oppData.name;
   try {
-    await db.ref('games/' + G.roomCode).set({ status: 'choosing', range: G.maxRange, player1: { name: p1Name, number: 0, guessCount: 0, ready: false }, player2: p2Name ? { name: p2Name, number: 0, guessCount: 0, ready: false } : null, currentTurn: 1, guesses: null, winner: null });
-    // Listener is still active, so handleState will automatically push both players to the Pick screen!
+    await db.ref('games/' + G.roomCode).set({ status: 'choosing', gameMode: lastData.gameMode, range: lastData.range, wordLength: lastData.wordLength, player1: { name: p1Name, number: 0, word: '', ready: false }, player2: p2Name ? { name: p2Name, number: 0, word: '', ready: false } : null, currentTurn: 1, guesses: null, winner: null });
     toast('New round!');
   } catch (e) { toast('Error'); }
 }
@@ -462,11 +734,17 @@ function leaveRoom() {
 
 function goHome() {
   if (G.gameRef) { G.gameRef.off(); G.listenerAttached = false; } if (G.presenceRef) G.presenceRef.onDisconnect().cancel();
-  G = { roomCode:null, isHost:false, myName:'', maxRange:100, playerNum:null, selectedMode:null, gameRef:null, listenerAttached:false, presenceRef:null, lastOppGuessKey:null, isSubmitting:false }; lastData = null;
-  document.getElementById('code-input').value = ''; document.getElementById('modal-left').classList.remove('active'); document.getElementById('modal-opp-guess').classList.remove('active'); showScreen('home');
+  G = { roomCode:null, isHost:false, myName:'', maxRange:100, wordLength:5, gameMode:'number', playerNum:null, selectedMode:null, selectedWordLen:null, gameRef:null, listenerAttached:false, presenceRef:null, lastOppGuessKey:null, lastOppLetterKey:null, isSubmitting:false }; lastData = null;
+  document.getElementById('code-input').value = ''; document.getElementById('modal-left').classList.remove('active'); document.getElementById('modal-opp-guess').classList.remove('active'); document.getElementById('modal-opp-letter').classList.remove('active'); document.getElementById('modal-my-letter').classList.remove('active'); showScreen('home');
 }
 
 document.getElementById('code-input').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); });
+document.getElementById('pick-word-input').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,''); });
+document.getElementById('letter-input').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g,''); });
+
+// Enter key submits
+document.getElementById('guess-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitGuess(); });
+document.getElementById('letter-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitLetterFromInput(); });
 </script>
 </body>
 </html>
