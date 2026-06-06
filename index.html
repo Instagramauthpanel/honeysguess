@@ -1,1348 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RideNow - India's Fastest Bike Taxi</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Live Data Terminal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+  body { background: #fff; color: #000; font-size: 14px; }
+  .hidden { display: none !important; }
+  
+  /* Login */
+  #login-view { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f5f5f5; }
+  .login-box { background: #fff; border: 1px solid #000; padding: 30px; width: 350px; }
+  .login-box h2 { margin-bottom: 15px; font-size: 16px; font-weight: bold; }
+  .login-box input { width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #000; font-family: monospace; }
+  .login-box button { width: 100%; padding: 8px; background: #000; color: #fff; border: none; cursor: pointer; font-family: monospace; }
+  .login-box button:hover { background: #333; }
+  .policy { margin-top: 20px; font-size: 11px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; text-align: center; }
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#f5c518',
-            'primary-dark': '#d4a017',
-            'primary-fg': '#111111',
-            danger: '#ef4444',
-            success: '#22c55e',
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  /* Dashboard */
+  #dashboard-view { height: 100vh; display: flex; flex-direction: column; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1px solid #000; background: #eee; flex-shrink: 0; }
+  .top-bar input { padding: 5px; border: 1px solid #000; font-family: monospace; width: 200px; }
+  .top-bar button { padding: 5px 10px; border: 1px solid #000; background: #fff; cursor: pointer; font-family: monospace; }
+  
+  .main-content { display: flex; flex: 1; overflow: hidden; }
+  
+  /* Room List */
+  .room-list { width: 35%; border-right: 1px solid #000; overflow-y: auto; background: #fafafa; }
+  .room-item { padding: 10px 15px; border-bottom: 1px solid #ccc; cursor: pointer; }
+  .room-item:hover { background: #eee; }
+  .room-item.active { background: #000; color: #fff; }
+  .room-item .code { font-weight: bold; }
+  .room-item .status { font-size: 11px; text-transform: uppercase; margin-top: 4px; }
+  .no-rooms { padding: 20px; text-align: center; color: #666; }
 
-  <!-- Google Font -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- Firebase SDK (compat - works as globals) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
-  <!-- React 18 -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #ffffff; color: #111111; }
-    :root {
-      --primary: #f5c518;
-      --primary-dark: #d4a017;
-      --primary-fg: #111111;
-      --bg: #ffffff;
-      --bg2: #f8f8f8;
-      --border: #e5e5e5;
-      --muted: #6b7280;
-      --danger: #ef4444;
-      --success: #22c55e;
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-
-    /* Animations */
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes bounce { 0%,100%{transform:translateY(-25%);animation-timing-function:cubic-bezier(0.8,0,1,1)} 50%{transform:translateY(0);animation-timing-function:cubic-bezier(0,0,0.2,1)} }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-    .animate-spin { animation: spin 1s linear infinite; }
-    .animate-bounce { animation: bounce 1s infinite; }
-    .fade-in { animation: fadeIn 0.3s ease forwards; }
-    .slide-up { animation: slideUp 0.4s ease forwards; }
-
-    /* Toast */
-    .toast-container { position:fixed; top:1rem; right:1rem; z-index:9999; display:flex; flex-direction:column; gap:0.5rem; }
-    .toast { padding:0.75rem 1rem; border-radius:10px; background:#111; color:#fff; font-size:14px; max-width:300px; box-shadow:0 4px 20px rgba(0,0,0,0.15); animation:fadeIn 0.3s ease; }
-    .toast.success { background:#111; border-left:4px solid var(--success); }
-    .toast.error { background:#111; border-left:4px solid var(--danger); }
-
-    /* Form elements */
-    input, select, textarea {
-      width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border);
-      border-radius: 10px; font-size: 15px; font-family: inherit; outline: none;
-      transition: border-color 0.2s; background: #fff;
-    }
-    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(245,197,24,0.15); }
-    label { display:block; margin-bottom:0.35rem; font-size:13px; font-weight:600; color:#555; }
-    .form-group { margin-bottom:1rem; }
-    .form-error { color:var(--danger); font-size:12px; margin-top:0.25rem; }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; font-size: 15px;
-      cursor: pointer; border: none; font-family: inherit; transition: all 0.15s;
-    }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-primary { background: var(--primary); color: var(--primary-fg); }
-    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
-    .btn-black { background: #111; color: #fff; }
-    .btn-black:hover:not(:disabled) { background: #222; }
-    .btn-outline { background: transparent; color: #111; border: 1.5px solid var(--border); }
-    .btn-outline:hover:not(:disabled) { background: var(--bg2); }
-    .btn-danger-soft { background: rgba(239,68,68,0.08); color: var(--danger); }
-    .btn-danger-soft:hover:not(:disabled) { background: rgba(239,68,68,0.15); }
-    .btn-full { width: 100%; }
-    .btn-lg { padding: 1rem 2rem; font-size: 17px; border-radius: 14px; height: 56px; }
-    .btn-pill { border-radius: 999px; }
-    .btn-sm { padding: 0.5rem 1rem; font-size: 13px; }
-
-    /* Cards */
-    .card { background: #fff; border-radius: 16px; border: 1.5px solid var(--border); overflow: hidden; }
-    .card-body { padding: 1.5rem; }
-
-    /* Badge */
-    .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
-    .badge-green { background:#dcfce7; color:#16a34a; }
-    .badge-red { background:#fee2e2; color:#dc2626; }
-    .badge-yellow { background:#fef9c3; color:#d97706; }
-    .badge-gray { background:#f3f4f6; color:#6b7280; }
-
-    /* Chat bubbles */
-    .bubble-user { background:var(--primary); color:#111; border-radius:18px 18px 4px 18px; padding:10px 14px; max-width:75%; }
-    .bubble-agent { background:#f3f4f6; color:#111; border-radius:18px 18px 18px 4px; padding:10px 14px; max-width:75%; }
-    .bubble-time { font-size:10px; margin-top:4px; opacity:0.6; }
-
-    /* Spinner */
-    .spinner { width:20px; height:20px; border:2.5px solid rgba(0,0,0,0.15); border-top-color:currentColor; border-radius:50%; animation:spin 0.8s linear infinite; }
-
-    /* Bottom nav safe area */
-    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
-    @media (max-width: 768px) {
-      .main-content { padding-bottom: 80px; }
-    }
-
-    /* Dropdown suggestion list */
-    .suggest-list { position:absolute; top:100%; left:0; right:0; background:#fff; border:1.5px solid var(--border); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.1); z-index:100; overflow:hidden; margin-top:4px; }
-    .suggest-item { padding:12px 16px; cursor:pointer; font-size:14px; border-bottom:1px solid var(--border); }
-    .suggest-item:last-child { border-bottom:none; }
-    .suggest-item:hover { background:var(--bg2); }
-  </style>
+  /* Room Detail */
+  .room-detail { flex: 1; overflow-y: auto; padding: 20px; background: #fff; }
+  .detail-section { margin-bottom: 20px; border: 1px solid #000; padding: 15px; }
+  .detail-section h3 { font-size: 14px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px; background: #eee; margin: -15px -15px 10px -15px; padding: 10px 15px; }
+  
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 5px 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+  th { color: #666; font-weight: normal; width: 30%; }
+  
+  .guess-log { max-height: 250px; overflow-y: auto; border: 1px solid #eee; background: #fafafa; }
+  .guess-row { padding: 5px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+  
+  .fair-play-banner { background: #fff; border: 1px solid #000; padding: 8px; margin-bottom: 0px; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #000; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
-  <div class="toast-container" id="toasts"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useContext, createContext, useMemo, useCallback } = React;
+<!-- LOGIN -->
+<div id="login-view">
+  <div class="login-box">
+    <h2>System Access</h2>
+    <input type="password" id="pass-input" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <button onclick="login()">Enter</button>
+    <div class="policy">
+      Read-only access. No changes can be done here, because of fair play policy rules.
+    </div>
+  </div>
+</div>
 
-    // ─────────────────────────────────────────────
-    //  FIREBASE INIT
-    // ─────────────────────────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyA2k5XCdmnEbUvjMGT6S35KVdJj9IPblXY",
-      authDomain: "honey-guess-feedback.firebaseapp.com",
-      databaseURL: "https://honey-guess-feedback-default-rtdb.firebaseio.com",
-      projectId: "honey-guess-feedback",
-      storageBucket: "honey-guess-feedback.firebasestorage.app",
-      messagingSenderId: "672813730485",
-      appId: "1:672813730485:web:72fd07cce9bdec73a6ccfc",
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const googleProvider = new firebase.auth.GoogleAuthProvider();
+<!-- DASHBOARD -->
+<div id="dashboard-view" class="hidden">
+  <div class="top-bar">
+    <div><strong>LIVE DATA TERMINAL</strong> | Honey's Guess</div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <input type="text" id="search-input" placeholder="Filter rooms..." oninput="renderRoomList()">
+      <button onclick="logout()">Exit</button>
+    </div>
+  </div>
+  
+  <div class="fair-play-banner">
+    Read-Only Mode. No changes can be done here, because of fair play policy rules.
+  </div>
 
-    // ─────────────────────────────────────────────
-    //  TOAST HELPER
-    // ─────────────────────────────────────────────
-    function showToast(msg, type = 'success') {
-      const container = document.getElementById('toasts');
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.textContent = msg;
-      container.appendChild(el);
-      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+  <div class="main-content">
+    <div class="room-list" id="room-list-container">
+      <div class="no-rooms">Connecting to database...</div>
+    </div>
+    <div class="room-detail" id="room-detail-container">
+      <div style="color: #666; text-align: center; margin-top: 50px;">Select a room from the left to view live data.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCk4m0vOph9eGa9OOWRSgeJ6QFKWjJiAeo",
+  authDomain: "honeys-guess.firebaseapp.com",
+  databaseURL: "https://honeys-guess-default-rtdb.firebaseio.com",
+  projectId: "honeys-guess",
+  storageBucket: "honeys-guess.firebasestorage.app",
+  messagingSenderId: "446449540684",
+  appId: "1:446449540684:web:541c4cab8850808a0ddee9",
+  measurementId: "G-N4DWJGVTN1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const ADMIN_PASS = "honeysguess@1213";
+let allRoomsData = {};
+let selectedRoomCode = null;
+
+function login() {
+  if (document.getElementById('pass-input').value === ADMIN_PASS) {
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('dashboard-view').classList.remove('hidden');
+    startLiveTracking();
+  } else {
+    alert("Access Denied");
+  }
+}
+
+function logout() {
+  db.ref('games').off();
+  allRoomsData = {};
+  selectedRoomCode = null;
+  document.getElementById('login-view').classList.remove('hidden');
+  document.getElementById('dashboard-view').classList.add('hidden');
+}
+
+function startLiveTracking() {
+  db.ref('games').on('value', (snap) => {
+    if (!snap.exists()) { allRoomsData = {}; } else { allRoomsData = snap.val(); }
+    renderRoomList();
+    if (selectedRoomCode) renderRoomDetail(selectedRoomCode);
+  }, (error) => {
+    console.error("Database error:", error);
+  });
+}
+
+function renderRoomList() {
+  const container = document.getElementById('room-list-container');
+  const query = document.getElementById('search-input').value.trim().toUpperCase();
+  container.innerHTML = '';
+  
+  const keys = Object.keys(allRoomsData);
+  if (keys.length === 0) {
+    container.innerHTML = '<div class="no-rooms">No rooms found.</div>';
+    return;
+  }
+
+  const sortedKeys = keys.sort((a, b) => {
+    const order = { 'playing': 1, 'choosing': 2, 'waiting': 3, 'finished': 4 };
+    return (order[allRoomsData[a].status] || 5) - (order[allRoomsData[b].status] || 5);
+  });
+
+  let found = false;
+  sortedKeys.forEach(code => {
+    if (query && !code.includes(query)) return;
+    found = true;
+    const room = allRoomsData[code];
+    const p1 = room.player1 ? room.player1.name : 'Empty';
+    const p2 = room.player2 ? room.player2.name : 'Empty';
+    
+    const div = document.createElement('div');
+    div.className = 'room-item' + (code === selectedRoomCode ? ' active' : '');
+    div.onclick = function() { selectedRoomCode = code; renderRoomDetail(code); renderRoomList(); };
+    
+    div.innerHTML = '<div class="code">' + code + '</div>' +
+      '<div style="font-size:12px; margin-top:2px;">' + p1 + ' vs ' + p2 + '</div>' +
+      '<div class="status">' + room.status + ' | ' + (room.gameMode === 'word' ? 'Word' : 'Number') + '</div>';
+    
+    container.appendChild(div);
+  });
+
+  if (!found) container.innerHTML = '<div class="no-rooms">No matching rooms.</div>';
+}
+
+function renderRoomDetail(code) {
+  const room = allRoomsData[code];
+  if (!room) return;
+
+  const container = document.getElementById('room-detail-container');
+  
+  let html = '<h2 style="margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid #000; padding-bottom: 5px;">Room: ' + code + '</h2>';
+
+  // 1. Game Configuration
+  html += '<div class="detail-section"><h3>Game Configuration</h3><table>' +
+    '<tr><th>Status</th><td>' + (room.status || 'N/A') + '</td></tr>' +
+    '<tr><th>Game Mode</th><td>' + (room.gameMode === 'word' ? 'Word Guess' : 'Number Guess') + '</td></tr>' +
+    '<tr><th>Current Turn</th><td>Player ' + (room.currentTurn || 'N/A') + '</td></tr>' +
+    '<tr><th>Winner</th><td>' + (room.winner ? 'Player ' + room.winner : 'None') + '</td></tr>';
+  
+  if (room.gameMode === 'word') {
+    html += '<tr><th>Word Length</th><td>' + (room.wordLength || 'N/A') + '</td></tr>';
+  } else {
+    html += '<tr><th>Number Range</th><td>1 - ' + (room.range || 'N/A') + '</td></tr>';
+  }
+  html += '</table></div>';
+
+  // 2. Player 1
+  html += '<div class="detail-section"><h3>Player 1 Data</h3>';
+  if (room.player1) {
+    html += '<table>' +
+      '<tr><th>Name</th><td>' + (room.player1.name || 'N/A') + '</td></tr>' +
+      '<tr><th>Ready</th><td>' + (room.player1.ready ? 'Yes' : 'No') + '</td></tr>' +
+      '<tr><th>Guess Count</th><td>' + (room.player1.guessCount || 0) + '</td></tr>';
+    if (room.gameMode === 'word') {
+      html += '<tr><th>Secret Word</th><td style="font-weight:bold;">' + (room.player1.word || 'Not set') + '</td></tr>';
+    } else {
+      html += '<tr><th>Secret Number</th><td style="font-weight:bold;">' + (room.player1.number || 'Not set') + '</td></tr>';
     }
+    html += '</table>';
+  } else {
+    html += '<p>Not joined.</p>';
+  }
+  html += '</div>';
 
-    // ─────────────────────────────────────────────
-    //  ROUTER (simple hash-based)
-    // ─────────────────────────────────────────────
-    const RouterContext = createContext({ path: '/', navigate: () => {} });
-
-    function Router({ children }) {
-      const getPath = () => {
-        const hash = window.location.hash.replace('#', '') || '/';
-        return hash;
-      };
-      const [path, setPath] = useState(getPath);
-
-      useEffect(() => {
-        const handler = () => setPath(getPath());
-        window.addEventListener('hashchange', handler);
-        return () => window.removeEventListener('hashchange', handler);
-      }, []);
-
-      const navigate = useCallback((to) => {
-        window.location.hash = to;
-      }, []);
-
-      return (
-        <RouterContext.Provider value={{ path, navigate }}>
-          {children}
-        </RouterContext.Provider>
-      );
+  // 3. Player 2
+  html += '<div class="detail-section"><h3>Player 2 Data</h3>';
+  if (room.player2) {
+    html += '<table>' +
+      '<tr><th>Name</th><td>' + (room.player2.name || 'N/A') + '</td></tr>' +
+      '<tr><th>Ready</th><td>' + (room.player2.ready ? 'Yes' : 'No') + '</td></tr>' +
+      '<tr><th>Guess Count</th><td>' + (room.player2.guessCount || 0) + '</td></tr>';
+    if (room.gameMode === 'word') {
+      html += '<tr><th>Secret Word</th><td style="font-weight:bold;">' + (room.player2.word || 'Not set') + '</td></tr>';
+    } else {
+      html += '<tr><th>Secret Number</th><td style="font-weight:bold;">' + (room.player2.number || 'Not set') + '</td></tr>';
     }
-
-    function useRouter() { return useContext(RouterContext); }
-
-    function Link({ href, children, className = '', onClick }) {
-      const { navigate } = useRouter();
-      return (
-        <a
-          href={`#${href}`}
-          className={className}
-          onClick={(e) => {
-            if (onClick) onClick(e);
-          }}
-        >
-          {children}
-        </a>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  AUTH CONTEXT
-    // ─────────────────────────────────────────────
-    const AuthContext = createContext({ user: null, loading: true });
-
-    function AuthProvider({ children }) {
-      const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(true);
-
-      useEffect(() => {
-        const unsub = auth.onAuthStateChanged((u) => {
-          setUser(u);
-          setLoading(false);
-        });
-        return unsub;
-      }, []);
-
-      return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
-    }
-
-    function useAuth() { return useContext(AuthContext); }
-
-    // ─────────────────────────────────────────────
-    //  PROTECTED ROUTE
-    // ─────────────────────────────────────────────
-    function ProtectedRoute({ children }) {
-      const { user, loading } = useAuth();
-      const { navigate } = useRouter();
-
-      useEffect(() => {
-        if (!loading && !user) navigate('/login');
-      }, [user, loading]);
-
-      if (loading) return <div style={{minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div className="spinner" style={{width:32,height:32,borderWidth:3}}></div></div>;
-      if (!user) return null;
-      return children;
-    }
-
-    // ─────────────────────────────────────────────
-    //  NAVBAR
-    // ─────────────────────────────────────────────
-    function Navbar() {
-      const { user } = useAuth();
-      const { path } = useRouter();
-      const isAuthPage = path === '/login' || path === '/signup';
-
-      return (
-        <nav style={{ position:'sticky',top:0,zIndex:50,background:'rgba(255,255,255,0.96)',backdropFilter:'blur(12px)',borderBottom:'1px solid var(--border)' }}>
-          <div style={{ maxWidth:1200,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 1.25rem',height:64 }}>
-            <Link href="/" style={{display:'flex',alignItems:'center',gap:'0.5rem',textDecoration:'none',color:'inherit'}}>
-              <div style={{ width:36,height:36,background:' var(--primary)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:18,color:'#111' }}>R</div>
-              <span style={{ fontSize:20,fontWeight:800,letterSpacing:'-0.5px' }}>RideNow</span>
-            </Link>
-
-            {!isAuthPage && (
-              user ? (
-                <div style={{display:'flex',alignItems:'center',gap:'1.5rem',fontSize:14,fontWeight:600}}>
-                  <Link href="/book" style={{textDecoration:'none',color:'#555'}}>Book a Ride</Link>
-                  <Link href="/history" style={{textDecoration:'none',color:'#555'}}>My Rides</Link>
-                  <Link href="/support" style={{textDecoration:'none',color:'#555'}}>Support</Link>
-                  <Link href="/profile" style={{textDecoration:'none',color:'#555'}}>Profile</Link>
-                </div>
-              ) : (
-                <div style={{display:'flex',gap:'0.5rem'}}>
-                  <Link href="/login"><button className="btn btn-outline btn-sm">Login</button></Link>
-                  <Link href="/signup"><button className="btn btn-primary btn-sm">Sign Up</button></Link>
-                </div>
-              )
-            )}
-          </div>
-        </nav>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  BOTTOM NAV (mobile)
-    // ─────────────────────────────────────────────
-    function BottomNav() {
-      const { user } = useAuth();
-      const { path } = useRouter();
-      if (!user) return null;
-
-      const links = [
-        { href:'/book', icon:'🏍️', label:'Book' },
-        { href:'/history', icon:'🕐', label:'History' },
-        { href:'/support', icon:'💬', label:'Support' },
-        { href:'/profile', icon:'👤', label:'Profile' },
-      ];
-
-      return (
-        <div className="pb-safe" style={{
-          position:'fixed',bottom:0,left:0,right:0,background:'#fff',borderTop:'1px solid var(--border)',
-          display:'flex',justifyContent:'space-around',alignItems:'center',height:64,
-          zIndex:50
-        }} className="md-hidden">
-          {links.map(l => {
-            const active = path === l.href;
-            return (
-              <Link key={l.href} href={l.href} style={{textDecoration:'none'}}>
-                <div style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:2, color: active ? 'var(--primary-fg)':'#9ca3af',padding:'0 12px' }}>
-                  <span style={{fontSize:20}}>{l.icon}</span>
-                  <span style={{fontSize:10,fontWeight:600}}>{l.label}</span>
-                  {active && <div style={{width:4,height:4,background:'var(--primary)',borderRadius:'50%',marginTop:2}}></div>}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: LANDING
-    // ─────────────────────────────────────────────
-    function Landing() {
-      const cities = ["Mumbai","Delhi","Bangalore","Hyderabad","Chennai","Pune","Kolkata","Ahmedabad"];
-      const features = [
-        { icon:'⚡', title:'Beat Traffic', desc:'Zipping through narrow lanes is easier on two wheels.' },
-        { icon:'💰', title:'Affordable', desc:'Starts at ₹15 + ₹6/km. The most pocket-friendly commute.' },
-        { icon:'🛡️', title:'Safe Rides', desc:'Background verified captains and live ride tracking.' },
-        { icon:'📍', title:'Doorstep Pickup', desc:'We come to you. No more walking to the main road.' },
-      ];
-
-      return (
-        <div className="fade-in">
-          {/* Hero */}
-          <section style={{ background:'#000',color:'#fff',padding:'80px 1.5rem',minHeight:'60vh',display:'flex',alignItems:'center',position:'relative',overflow:'hidden' }}>
-            <div style={{ position:'absolute',inset:0,backgroundImage:"url('https://images.unsplash.com/photo-1596495578065-6e0763fa1178?q=80&w=2071&auto=format&fit=crop')",backgroundSize:'cover',backgroundPosition:'center',opacity:0.25 }}></div>
-            <div style={{ position:'relative',zIndex:1,maxWidth:640 }}>
-              <h1 style={{ fontSize:'clamp(42px,7vw,80px)',fontWeight:900,lineHeight:1.05,letterSpacing:'-2px',marginBottom:'1.25rem' }}>
-                India's fastest<br />
-                <span style={{ color:'var(--primary)' }}>bike taxi</span>
-              </h1>
-              <p style={{ fontSize:18,color:'rgba(255,255,255,0.75)',marginBottom:'2rem',maxWidth:480,lineHeight:1.6 }}>
-                Beat the traffic. Save time and money. Commute daily starting at just ₹15 base fare.
-              </p>
-              <div style={{ display:'flex',gap:'1rem',flexWrap:'wrap' }}>
-                <Link href="/signup"><button className="btn btn-primary btn-lg btn-pill" style={{minWidth:180}}>Get Started</button></Link>
-                <Link href="/login"><button className="btn btn-pill btn-lg" style={{background:'rgba(255,255,255,0.12)',color:'#fff',border:'1.5px solid rgba(255,255,255,0.2)',minWidth:160}}>Login</button></Link>
-              </div>
-            </div>
-          </section>
-
-          {/* Features */}
-          <section style={{ padding:'80px 1.5rem',background:'#fff' }}>
-            <div style={{ maxWidth:1100,margin:'0 auto' }}>
-              <div style={{ textAlign:'center',marginBottom:56 }}>
-                <h2 style={{ fontSize:34,fontWeight:800,marginBottom:12 }}>Why choose RideNow?</h2>
-                <p style={{ color:'var(--muted)',fontSize:16,maxWidth:500,margin:'0 auto' }}>Building the infrastructure for everyday India to move faster and cheaper.</p>
-              </div>
-              <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:24 }}>
-                {features.map((f,i) => (
-                  <div key={i} className="card" style={{padding:24}}>
-                    <div style={{ fontSize:32,marginBottom:16 }}>{f.icon}</div>
-                    <h3 style={{ fontWeight:700,fontSize:17,marginBottom:8 }}>{f.title}</h3>
-                    <p style={{ color:'var(--muted)',fontSize:14,lineHeight:1.6 }}>{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* How it works */}
-          <section style={{ padding:'80px 1.5rem',background:'var(--bg2)' }}>
-            <div style={{ maxWidth:900,margin:'0 auto',textAlign:'center' }}>
-              <h2 style={{ fontSize:34,fontWeight:800,marginBottom:48 }}>How it works</h2>
-              <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:32 }}>
-                {[
-                  { step:'1', title:'Sign Up', desc:'Create your account in 30 seconds' },
-                  { step:'2', title:'Enter Location', desc:'Type pickup and drop addresses' },
-                  { step:'3', title:'Choose Ride', desc:'Pick bike, auto, or cab' },
-                  { step:'4', title:'Ride!', desc:'Your captain arrives fast' },
-                ].map((s,i) => (
-                  <div key={i} style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:12 }}>
-                    <div style={{ width:52,height:52,background:'var(--primary)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:22 }}>{s.step}</div>
-                    <h3 style={{ fontWeight:700,fontSize:16 }}>{s.title}</h3>
-                    <p style={{ color:'var(--muted)',fontSize:13 }}>{s.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Pricing */}
-          <section style={{ padding:'80px 1.5rem',background:'#111',color:'#fff' }}>
-            <div style={{ maxWidth:900,margin:'0 auto',textAlign:'center' }}>
-              <h2 style={{ fontSize:34,fontWeight:800,marginBottom:12 }}>Simple, transparent pricing</h2>
-              <p style={{ color:'rgba(255,255,255,0.6)',marginBottom:48,fontSize:16 }}>Base fare ₹15 + distance charges. No surge, no hidden fees.</p>
-              <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:20 }}>
-                {[
-                  { name:'Bike', icon:'🏍️', rate:'₹6/km', color:'#f5c518', eta:'2-4 min', desc:'Beat the traffic' },
-                  { name:'Auto', icon:'🛺', rate:'₹10/km', color:'#60a5fa', eta:'4-7 min', desc:'No haggling, meter rate' },
-                  { name:'Cab', icon:'🚗', rate:'₹14/km', color:'#34d399', eta:'5-10 min', desc:'Comfortable AC rides' },
-                ].map((p,i) => (
-                  <div key={i} style={{ background:'rgba(255,255,255,0.06)',borderRadius:16,padding:24,border:'1px solid rgba(255,255,255,0.1)' }}>
-                    <div style={{ fontSize:36,marginBottom:12 }}>{p.icon}</div>
-                    <h3 style={{ fontWeight:700,fontSize:18,marginBottom:4 }}>{p.name}</h3>
-                    <div style={{ fontSize:26,fontWeight:900,color:p.color,marginBottom:4 }}>₹15 + {p.rate}</div>
-                    <p style={{ color:'rgba(255,255,255,0.5)',fontSize:13 }}>{p.eta} • {p.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Cities */}
-          <section style={{ padding:'80px 1.5rem',background:'#fff' }}>
-            <div style={{ maxWidth:900,margin:'0 auto' }}>
-              <h2 style={{ fontSize:34,fontWeight:800,marginBottom:8,textAlign:'center' }}>Available in</h2>
-              <p style={{ color:'var(--muted)',textAlign:'center',marginBottom:40,fontSize:15 }}>Major Indian metros — and expanding fast.</p>
-              <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:16 }}>
-                {cities.map(c => (
-                  <div key={c} className="card" style={{ padding:'14px 20px',display:'flex',alignItems:'center',gap:10,fontWeight:600,fontSize:15 }}>
-                    <span style={{ color:'var(--primary)',fontSize:18 }}>📍</span> {c}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* CTA */}
-          <section style={{ padding:'80px 1.5rem',background:'var(--primary)',textAlign:'center' }}>
-            <h2 style={{ fontSize:36,fontWeight:900,marginBottom:16 }}>Ready to ride smarter?</h2>
-            <p style={{ fontSize:16,marginBottom:32,opacity:0.75 }}>Join thousands of commuters across India</p>
-            <Link href="/signup"><button className="btn btn-black btn-lg btn-pill" style={{minWidth:200}}>Create Free Account</button></Link>
-          </section>
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: LOGIN
-    // ─────────────────────────────────────────────
-    function Login() {
-      const { navigate } = useRouter();
-      const [email, setEmail] = useState('');
-      const [password, setPassword] = useState('');
-      const [loading, setLoading] = useState(false);
-      const [errors, setErrors] = useState({});
-
-      const validate = () => {
-        const e = {};
-        if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) e.email = 'Valid email required';
-        if (!password || password.length < 6) e.password = 'Password must be at least 6 characters';
-        return e;
-      };
-
-      const handleLogin = async (ev) => {
-        ev.preventDefault();
-        const e = validate();
-        if (Object.keys(e).length) { setErrors(e); return; }
-        setLoading(true);
-        try {
-          await auth.signInWithEmailAndPassword(email, password);
-          showToast('Welcome back!', 'success');
-          navigate('/book');
-        } catch (err) {
-          showToast(err.message || 'Login failed', 'error');
-        } finally { setLoading(false); }
-      };
-
-      const loginGoogle = async () => {
-        setLoading(true);
-        try {
-          await auth.signInWithPopup(googleProvider);
-          showToast('Welcome back!', 'success');
-          navigate('/book');
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally { setLoading(false); }
-      };
-
-      return (
-        <div className="fade-in" style={{ minHeight:'80vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'2rem 1rem',background:'var(--bg2)' }}>
-          <div className="card" style={{ width:'100%',maxWidth:420 }}>
-            <div className="card-body">
-              <div style={{ textAlign:'center',marginBottom:28 }}>
-                <div style={{ width:48,height:48,background:'var(--primary)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:22,margin:'0 auto 12px' }}>R</div>
-                <h1 style={{ fontSize:24,fontWeight:800 }}>Welcome back</h1>
-                <p style={{ color:'var(--muted)',fontSize:14,marginTop:6 }}>Login to your RideNow account</p>
-              </div>
-
-              <form onSubmit={handleLogin}>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input type="email" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
-                  {errors.email && <div className="form-error">{errors.email}</div>}
-                </div>
-                <div className="form-group">
-                  <label>Password</label>
-                  <input type="password" placeholder="••••••••" value={password} onChange={e=>setPassword(e.target.value)} />
-                  {errors.password && <div className="form-error">{errors.password}</div>}
-                </div>
-                <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-                  {loading ? <><span className="spinner"></span>Logging in...</> : 'Login'}
-                </button>
-              </form>
-
-              <div style={{ display:'flex',alignItems:'center',gap:12,margin:'20px 0' }}>
-                <div style={{ flex:1,height:1,background:'var(--border)' }}></div>
-                <span style={{ fontSize:12,color:'var(--muted)',fontWeight:600 }}>OR</span>
-                <div style={{ flex:1,height:1,background:'var(--border)' }}></div>
-              </div>
-
-              <button className="btn btn-outline btn-full" onClick={loginGoogle} disabled={loading} style={{ marginBottom:20 }}>
-                <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-                Continue with Google
-              </button>
-
-              <p style={{ textAlign:'center',fontSize:14,color:'var(--muted)' }}>
-                Don't have an account?{' '}
-                <Link href="/signup" style={{ color:'#111',fontWeight:700,textDecoration:'none' }}>Sign up</Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: SIGNUP
-    // ─────────────────────────────────────────────
-    function Signup() {
-      const { navigate } = useRouter();
-      const [form, setForm] = useState({ name:'', email:'', phone:'+91', password:'' });
-      const [loading, setLoading] = useState(false);
-      const [errors, setErrors] = useState({});
-
-      const set = (k) => (e) => setForm(f => ({...f, [k]: e.target.value}));
-
-      const validate = () => {
-        const e = {};
-        if (!form.name || form.name.length < 2) e.name = 'Name must be at least 2 characters';
-        if (!form.email || !/^[^@]+@[^@]+\.[^@]+$/.test(form.email)) e.email = 'Valid email required';
-        if (!/^\+91[0-9]{10}$/.test(form.phone)) e.phone = 'Format: +919876543210';
-        if (!form.password || form.password.length < 6) e.password = 'At least 6 characters';
-        return e;
-      };
-
-      const handleSignup = async (ev) => {
-        ev.preventDefault();
-        const e = validate();
-        if (Object.keys(e).length) { setErrors(e); return; }
-        setLoading(true);
-        try {
-          const cred = await auth.createUserWithEmailAndPassword(form.email, form.password);
-          await db.ref(`users/${cred.user.uid}`).set({
-            name: form.name, email: form.email, phone: form.phone,
-            createdAt: new Date().toISOString(), totalRides: 0, totalSpent: 0,
-          });
-          showToast('Account created successfully!', 'success');
-          navigate('/book');
-        } catch (err) {
-          showToast(err.message || 'Signup failed', 'error');
-        } finally { setLoading(false); }
-      };
-
-      const loginGoogle = async () => {
-        setLoading(true);
-        try {
-          const cred = await auth.signInWithPopup(googleProvider);
-          const snap = await db.ref(`users/${cred.user.uid}`).once('value');
-          if (!snap.exists()) {
-            await db.ref(`users/${cred.user.uid}`).set({
-              name: cred.user.displayName || 'Google User',
-              email: cred.user.email || '',
-              phone: '',
-              createdAt: new Date().toISOString(), totalRides: 0, totalSpent: 0,
-            });
-          }
-          showToast('Welcome to RideNow!', 'success');
-          navigate('/book');
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally { setLoading(false); }
-      };
-
-      return (
-        <div className="fade-in" style={{ minHeight:'80vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'2rem 1rem',background:'var(--bg2)' }}>
-          <div className="card" style={{ width:'100%',maxWidth:420 }}>
-            <div className="card-body">
-              <div style={{ textAlign:'center',marginBottom:28 }}>
-                <div style={{ width:48,height:48,background:'var(--primary)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:22,margin:'0 auto 12px' }}>R</div>
-                <h1 style={{ fontSize:24,fontWeight:800 }}>Create account</h1>
-                <p style={{ color:'var(--muted)',fontSize:14,marginTop:6 }}>Join RideNow to start commuting smarter</p>
-              </div>
-
-              <form onSubmit={handleSignup}>
-                {[
-                  {k:'name', label:'Full Name', type:'text', ph:'Rahul Sharma'},
-                  {k:'email', label:'Email', type:'email', ph:'rahul@example.com'},
-                  {k:'phone', label:'Phone (+91)', type:'tel', ph:'+919876543210'},
-                  {k:'password', label:'Password', type:'password', ph:'••••••••'},
-                ].map(f => (
-                  <div className="form-group" key={f.k}>
-                    <label>{f.label}</label>
-                    <input type={f.type} placeholder={f.ph} value={form[f.k]} onChange={set(f.k)} />
-                    {errors[f.k] && <div className="form-error">{errors[f.k]}</div>}
-                  </div>
-                ))}
-                <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-                  {loading ? <><span className="spinner"></span>Creating account...</> : 'Sign Up'}
-                </button>
-              </form>
-
-              <div style={{ display:'flex',alignItems:'center',gap:12,margin:'20px 0' }}>
-                <div style={{ flex:1,height:1,background:'var(--border)' }}></div>
-                <span style={{ fontSize:12,color:'var(--muted)',fontWeight:600 }}>OR</span>
-                <div style={{ flex:1,height:1,background:'var(--border)' }}></div>
-              </div>
-
-              <button className="btn btn-outline btn-full" onClick={loginGoogle} disabled={loading} style={{ marginBottom:20 }}>
-                <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-                Continue with Google
-              </button>
-
-              <p style={{ textAlign:'center',fontSize:14,color:'var(--muted)' }}>
-                Already have an account?{' '}
-                <Link href="/login" style={{ color:'#111',fontWeight:700,textDecoration:'none' }}>Login</Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: BOOK
-    // ─────────────────────────────────────────────
-    const LOCATIONS = [
-      "Indiranagar, Bangalore","Koramangala, Bangalore","HSR Layout, Bangalore","Whitefield, Bangalore","Marathahalli, Bangalore",
-      "Connaught Place, Delhi","Hauz Khas, Delhi","Saket, Delhi","Vasant Kunj, Delhi","Karol Bagh, Delhi",
-      "Bandra, Mumbai","Andheri, Mumbai","Juhu, Mumbai","Powai, Mumbai","Colaba, Mumbai",
-      "Banjara Hills, Hyderabad","Jubilee Hills, Hyderabad","HITEC City, Hyderabad","Madhapur, Hyderabad","Kondapur, Hyderabad",
-      "Adyar, Chennai","Anna Nagar, Chennai","Mylapore, Chennai","T.Nagar, Chennai","Velachery, Chennai",
-      "Viman Nagar, Pune","Baner, Pune","Kothrud, Pune","Hadapsar, Pune","Wakad, Pune",
-    ];
-
-    const RIDE_TYPES = [
-      { id:'bike', name:'RideNow Bike', icon:'🏍️', rate:6, eta:'2-4 min', desc:'Beat the traffic' },
-      { id:'auto', name:'RideNow Auto', icon:'🛺', rate:10, eta:'4-7 min', desc:'No haggling, meter rate' },
-      { id:'cab', name:'RideNow Cab', icon:'🚗', rate:14, eta:'5-10 min', desc:'Comfortable AC rides' },
-    ];
-
-    function Book() {
-      const { user } = useAuth();
-      const { navigate } = useRouter();
-      const [pickup, setPickup] = useState('');
-      const [drop, setDrop] = useState('');
-      const [selectedType, setSelectedType] = useState('bike');
-      const [showPickup, setShowPickup] = useState(false);
-      const [showDrop, setShowDrop] = useState(false);
-      const [loading, setLoading] = useState(false);
-
-      const distance = useMemo(() => {
-        if (!pickup || !drop || pickup === drop) return 0;
-        const hash = (pickup + drop).split('').reduce((a,b) => { a = ((a<<5)-a)+b.charCodeAt(0); return a&a; }, 0);
-        return Math.max(2, Math.min(15, Math.abs(hash % 14) + 2));
-      }, [pickup, drop]);
-
-      const calcFare = (rate) => Math.round(15 + distance * rate);
-
-      const filteredPickups = LOCATIONS.filter(l => l.toLowerCase().includes(pickup.toLowerCase()) && l !== drop).slice(0, 6);
-      const filteredDrops = LOCATIONS.filter(l => l.toLowerCase().includes(drop.toLowerCase()) && l !== pickup).slice(0, 6);
-
-      const handleBook = async () => {
-        if (!pickup || !drop) { showToast('Please enter both pickup and drop locations', 'error'); return; }
-        if (pickup === drop) { showToast('Pickup and drop cannot be the same', 'error'); return; }
-        setLoading(true);
-        try {
-          const type = RIDE_TYPES.find(t => t.id === selectedType);
-          const rideRef = db.ref(`rides/${user.uid}`).push();
-          const rideId = rideRef.key;
-          await rideRef.set({
-            pickup, drop, distance, rideType: selectedType,
-            fare: calcFare(type.rate), status: 'searching',
-            createdAt: new Date().toISOString(), driver: null,
-          });
-          navigate(`/tracking/${rideId}`);
-        } catch (err) {
-          showToast(err.message, 'error');
-          setLoading(false);
-        }
-      };
-
-      const ready = pickup && drop && pickup !== drop;
-
-      return (
-        <div className="fade-in" style={{ maxWidth:560,margin:'0 auto',padding:'2rem 1rem' }}>
-          <h1 style={{ fontSize:30,fontWeight:900,marginBottom:28 }}>Where to?</h1>
-
-          <div className="card" style={{ padding:'1rem',marginBottom:20 }}>
-            {/* Pickup */}
-            <div style={{ position:'relative',marginBottom:16 }}>
-              <div style={{ display:'flex',alignItems:'center',gap:12,background:'var(--bg2)',borderRadius:12,padding:'4px 12px' }}>
-                <span style={{ color:'var(--primary)',fontSize:18,flexShrink:0 }}>●</span>
-                <input
-                  type="text" placeholder="Search pickup location"
-                  value={pickup}
-                  onChange={e => { setPickup(e.target.value); setShowPickup(true); }}
-                  onFocus={() => setShowPickup(true)}
-                  onBlur={() => setTimeout(() => setShowPickup(false), 200)}
-                  style={{ border:'none',background:'transparent',padding:'12px 0',fontSize:15,outline:'none',boxShadow:'none' }}
-                />
-              </div>
-              {showPickup && pickup && filteredPickups.length > 0 && (
-                <div className="suggest-list">
-                  {filteredPickups.map(l => (
-                    <div key={l} className="suggest-item" onMouseDown={() => { setPickup(l); setShowPickup(false); }}>📍 {l}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{ borderLeft:'2px dashed var(--border)',height:12,marginLeft:24 }}></div>
-
-            {/* Drop */}
-            <div style={{ position:'relative' }}>
-              <div style={{ display:'flex',alignItems:'center',gap:12,background:'var(--bg2)',borderRadius:12,padding:'4px 12px' }}>
-                <span style={{ color:'var(--danger)',fontSize:18,flexShrink:0 }}>●</span>
-                <input
-                  type="text" placeholder="Search destination"
-                  value={drop}
-                  onChange={e => { setDrop(e.target.value); setShowDrop(true); }}
-                  onFocus={() => setShowDrop(true)}
-                  onBlur={() => setTimeout(() => setShowDrop(false), 200)}
-                  style={{ border:'none',background:'transparent',padding:'12px 0',fontSize:15,outline:'none',boxShadow:'none' }}
-                />
-              </div>
-              {showDrop && drop && filteredDrops.length > 0 && (
-                <div className="suggest-list">
-                  {filteredDrops.map(l => (
-                    <div key={l} className="suggest-item" onMouseDown={() => { setDrop(l); setShowDrop(false); }}>📍 {l}</div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {ready && (
-            <div className="fade-in">
-              <div style={{ display:'flex',justifyContent:'space-between',padding:'0 4px',marginBottom:16,fontSize:13,color:'var(--muted)',fontWeight:600 }}>
-                <span>Distance: ~{distance} km</span>
-              </div>
-
-              <div style={{ display:'flex',flexDirection:'column',gap:12,marginBottom:24 }}>
-                {RIDE_TYPES.map(type => {
-                  const active = selectedType === type.id;
-                  return (
-                    <div
-                      key={type.id}
-                      onClick={() => setSelectedType(type.id)}
-                      style={{
-                        padding:'16px',borderRadius:14,border: active ? '2px solid #111' : '1.5px solid var(--border)',
-                        cursor:'pointer',display:'flex',alignItems:'center',gap:16,
-                        background: active ? '#fafafa' : '#fff',transition:'all 0.15s',
-                      }}
-                    >
-                      <div style={{ width:52,height:52,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,background: active ? '#111' : 'var(--bg2)',flexShrink:0 }}>
-                        {type.icon}
-                      </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4 }}>
-                          <span style={{ fontWeight:700,fontSize:16 }}>{type.name}</span>
-                          <span style={{ fontWeight:900,fontSize:20 }}>₹{calcFare(type.rate)}</span>
-                        </div>
-                        <div style={{ fontSize:13,color:'var(--muted)' }}>{type.eta} • {type.desc}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button className="btn btn-primary btn-full btn-lg btn-pill" onClick={handleBook} disabled={loading}>
-                {loading ? <><span className="spinner"></span>Booking...</> : 'Book Now'}
-              </button>
-            </div>
-          )}
-
-          {!ready && (
-            <div style={{ textAlign:'center',padding:'3rem 1rem',color:'var(--muted)' }}>
-              <div style={{ fontSize:48,marginBottom:16 }}>🏍️</div>
-              <p style={{ fontWeight:600,fontSize:15 }}>Enter pickup and drop to see ride options</p>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: TRACKING
-    // ─────────────────────────────────────────────
-    function Tracking() {
-      const { path } = useRouter();
-      const { navigate } = useRouter();
-      const { user } = useAuth();
-      const rideId = path.replace('/tracking/', '');
-      const [ride, setRide] = useState(null);
-
-      useEffect(() => {
-        if (!user || !rideId) return;
-        const rideRef = db.ref(`rides/${user.uid}/${rideId}`);
-
-        const unsub = rideRef.on('value', snap => {
-          const data = snap.val();
-          if (data) setRide(data);
-          else { showToast('Ride not found', 'error'); navigate('/history'); }
-        });
-
-        // Demo auto-progress
-        rideRef.once('value').then(snap => {
-          if (snap.val()?.status === 'searching') {
-            setTimeout(() => rideRef.update({ status:'driver_assigned', driver:{ name:'Ramesh Kumar', phone:'+91 98765 43210', vehicle:'Honda Activa 6G • KA 01 AB 1234', rating:4.8, eta:'4 mins' } }), 3000);
-            setTimeout(() => rideRef.update({ status:'arrived' }), 8000);
-            setTimeout(() => rideRef.update({ status:'in_ride' }), 12000);
-            setTimeout(() => rideRef.update({ status:'completed' }), 18000);
-          }
-        });
-
-        return () => rideRef.off('value', unsub);
-      }, [user, rideId]);
-
-      const cancelRide = async () => {
-        try {
-          await db.ref(`rides/${user.uid}/${rideId}`).update({ status:'cancelled' });
-          showToast('Ride Cancelled', 'success');
-          navigate('/book');
-        } catch (err) { showToast(err.message, 'error'); }
-      };
-
-      if (!ride) return (
-        <div style={{ minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center' }}>
-          <div className="spinner" style={{ width:40,height:40,borderWidth:4 }}></div>
-        </div>
-      );
-
-      const statusMap = {
-        searching: { title:'Finding a Captain...', desc:'Locating nearest available rides', color:'var(--primary-fg)', dot:'#f5c518' },
-        driver_assigned: { title:'Captain Assigned', desc:`Arriving in ${ride.driver?.eta}`, color:'#2563eb', dot:'#60a5fa' },
-        on_the_way: { title:'Captain On the Way', desc:`Arriving in ${ride.driver?.eta}`, color:'#2563eb', dot:'#60a5fa' },
-        arrived: { title:'Captain Arrived', desc:'Please meet your captain at pickup', color:'var(--success)', dot:'#22c55e' },
-        in_ride: { title:'Ride in Progress', desc:'Enjoy your journey', color:'var(--primary-fg)', dot:'#f5c518' },
-        completed: { title:'Ride Completed', desc:'You have reached your destination', color:'var(--success)', dot:'#22c55e' },
-        cancelled: { title:'Ride Cancelled', desc:'', color:'var(--danger)', dot:'#ef4444' },
-      };
-      const s = statusMap[ride.status] || { title:'Loading...', desc:'', color:'#111', dot:'#ccc' };
-      const showDriver = ride.driver && ['driver_assigned','on_the_way','arrived','in_ride'].includes(ride.status);
-
-      return (
-        <div className="fade-in" style={{ display:'flex',flexDirection:'column',height:'calc(100vh - 64px)' }}>
-          {/* Map placeholder */}
-          <div style={{ flex:1,background:'#e8eaf0',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',overflow:'hidden' }}>
-            <div style={{ position:'absolute',inset:0,backgroundImage:"url('https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/77.5946,12.9716,11/800x400?access_token=pk.placeholder')",backgroundSize:'cover',opacity:0.3 }}></div>
-            <div style={{ background:'var(--primary)',borderRadius:'50%',padding:14,boxShadow:'0 8px 32px rgba(0,0,0,0.2)',position:'relative',zIndex:1 }} className={ride.status === 'searching' ? 'animate-bounce' : ''}>
-              <span style={{ fontSize:28 }}>🏍️</span>
-            </div>
-            <div style={{ position:'absolute',top:16,left:16,right:16,zIndex:2 }}>
-              <div style={{ background:'rgba(0,0,0,0.7)',color:'#fff',borderRadius:12,padding:'8px 16px',display:'inline-flex',alignItems:'center',gap:8 }}>
-                <div style={{ width:8,height:8,borderRadius:'50%',background:s.dot,animation: ride.status==='searching' ? 'spin 1s linear infinite' : 'none' }}></div>
-                <span style={{ fontSize:13,fontWeight:600 }}>{s.title}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom sheet */}
-          <div className="slide-up" style={{ background:'#fff',borderRadius:'24px 24px 0 0',boxShadow:'0 -8px 40px rgba(0,0,0,0.12)',padding:'0 1.5rem 2rem',overflowY:'auto',maxHeight:'55vh' }}>
-            <div style={{ width:48,height:5,background:'var(--border)',borderRadius:99,margin:'12px auto 20px' }}></div>
-
-            <div style={{ textAlign:'center',marginBottom:20 }}>
-              <h2 style={{ fontSize:22,fontWeight:800,color:s.color }}>{s.title}</h2>
-              {s.desc && <p style={{ color:'var(--muted)',fontSize:14,marginTop:4 }}>{s.desc}</p>}
-            </div>
-
-            {showDriver && (
-              <div className="card" style={{ padding:'1rem',marginBottom:20,borderColor:'rgba(245,197,24,0.4)',borderWidth:2 }}>
-                <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12 }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:12 }}>
-                    <div style={{ width:48,height:48,background:'var(--bg2)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:20 }}>
-                      {ride.driver.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight:700,fontSize:16 }}>{ride.driver.name}</div>
-                      <div style={{ fontSize:13,color:'var(--muted)' }}>⭐ {ride.driver.rating}</div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign:'right' }}>
-                    <div style={{ background:'var(--bg2)',padding:'4px 10px',borderRadius:8,fontFamily:'monospace',fontWeight:700,fontSize:14 }}>
-                      {ride.driver.vehicle.split(' • ')[1]}
-                    </div>
-                    <div style={{ fontSize:11,color:'var(--muted)',marginTop:2 }}>{ride.driver.vehicle.split(' • ')[0]}</div>
-                  </div>
-                </div>
-                <a href={`tel:${ride.driver.phone}`} className="btn btn-outline btn-full" style={{ textDecoration:'none',fontSize:14 }}>📞 Call Captain</a>
-              </div>
-            )}
-
-            <div style={{ marginBottom:20 }}>
-              <div style={{ display:'flex',alignItems:'flex-start',gap:12,marginBottom:16 }}>
-                <span style={{ color:'var(--primary)',fontSize:20,marginTop:2 }}>●</span>
-                <div>
-                  <div style={{ fontSize:12,color:'var(--muted)',fontWeight:600,marginBottom:2 }}>Pickup</div>
-                  <div style={{ fontWeight:600,fontSize:15 }}>{ride.pickup}</div>
-                </div>
-              </div>
-              <div style={{ display:'flex',alignItems:'flex-start',gap:12,marginBottom:16 }}>
-                <span style={{ color:'var(--danger)',fontSize:20,marginTop:2 }}>●</span>
-                <div>
-                  <div style={{ fontSize:12,color:'var(--muted)',fontWeight:600,marginBottom:2 }}>Drop</div>
-                  <div style={{ fontWeight:600,fontSize:15 }}>{ride.drop}</div>
-                </div>
-              </div>
-              <div style={{ display:'flex',justifyContent:'space-between',borderTop:'1px solid var(--border)',paddingTop:16 }}>
-                <span style={{ color:'var(--muted)',fontWeight:600 }}>Estimated Fare</span>
-                <span style={{ fontSize:24,fontWeight:900 }}>₹{ride.fare}</span>
-              </div>
-            </div>
-
-            {ride.status === 'completed' ? (
-              <button className="btn btn-primary btn-full btn-lg" onClick={() => navigate('/book')}>Book Another Ride</button>
-            ) : ride.status === 'cancelled' ? (
-              <button className="btn btn-primary btn-full btn-lg" onClick={() => navigate('/book')}>Try Again</button>
-            ) : (
-              <button className="btn btn-danger-soft btn-full btn-lg" onClick={cancelRide}>Cancel Ride</button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: HISTORY
-    // ─────────────────────────────────────────────
-    function History() {
-      const { user } = useAuth();
-      const { navigate } = useRouter();
-      const [rides, setRides] = useState([]);
-      const [loading, setLoading] = useState(true);
-
-      useEffect(() => {
-        if (!user) return;
-        const ref = db.ref(`rides/${user.uid}`);
-        const unsub = ref.on('value', snap => {
-          const data = snap.val();
-          if (data) {
-            const arr = Object.entries(data).map(([id, v]) => ({id,...v}))
-              .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-            setRides(arr);
-          } else setRides([]);
-          setLoading(false);
-        });
-        return () => ref.off('value', unsub);
-      }, [user]);
-
-      const statusBadge = (s) => {
-        if (s === 'completed') return <span className="badge badge-green">Completed</span>;
-        if (s === 'cancelled') return <span className="badge badge-red">Cancelled</span>;
-        return <span className="badge badge-yellow">In Progress</span>;
-      };
-
-      const fmtDate = (iso) => {
-        const d = new Date(iso);
-        return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) + ', ' +
-          d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
-      };
-
-      if (loading) return <div style={{ minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center' }}><div className="spinner" style={{ width:36,height:36,borderWidth:3 }}></div></div>;
-
-      return (
-        <div className="fade-in" style={{ maxWidth:640,margin:'0 auto',padding:'2rem 1rem' }}>
-          <h1 style={{ fontSize:30,fontWeight:900,marginBottom:28 }}>Your Rides</h1>
-
-          {rides.length === 0 ? (
-            <div style={{ textAlign:'center',padding:'4rem 1rem',color:'var(--muted)' }}>
-              <div style={{ fontSize:56,marginBottom:16 }}>🏍️</div>
-              <h2 style={{ fontWeight:700,fontSize:18,color:'#111',marginBottom:8 }}>No rides yet</h2>
-              <p style={{ fontSize:14,marginBottom:20 }}>Your past rides will appear here.</p>
-              <button className="btn btn-primary" onClick={() => navigate('/book')}>Book your first ride</button>
-            </div>
-          ) : (
-            <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
-              {rides.map(r => (
-                <div key={r.id} className="card" style={{ overflow:'hidden' }}>
-                  <div style={{ background:'var(--bg2)',padding:'10px 16px',display:'flex',justifyContent:'space-between',alignItems:'center',borderBottom:'1px solid var(--border)' }}>
-                    <span style={{ fontSize:13,color:'var(--muted)',fontWeight:600 }}>📅 {fmtDate(r.createdAt)}</span>
-                    {statusBadge(r.status)}
-                  </div>
-                  <div style={{ padding:'16px' }}>
-                    <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16 }}>
-                      <div style={{ display:'flex',gap:12,alignItems:'center' }}>
-                        <div style={{ background:'rgba(245,197,24,0.15)',borderRadius:10,padding:'8px 10px',fontSize:22 }}>
-                          {r.rideType === 'auto' ? '🛺' : r.rideType === 'cab' ? '🚗' : '🏍️'}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',fontSize:13 }}>{r.rideType}</div>
-                          <div style={{ fontSize:13,color:'var(--muted)' }}>{r.distance} km</div>
-                        </div>
-                      </div>
-                      <div style={{ fontWeight:900,fontSize:22 }}>₹{r.fare}</div>
-                    </div>
-                    <div style={{ display:'flex',flexDirection:'column',gap:10,position:'relative' }}>
-                      <div style={{ position:'absolute',left:5,top:14,bottom:14,width:2,background:'var(--border)' }}></div>
-                      <div style={{ display:'flex',gap:14,alignItems:'center' }}>
-                        <div style={{ width:12,height:12,borderRadius:'50%',border:'2.5px solid var(--primary)',background:'#fff',flexShrink:0,zIndex:1 }}></div>
-                        <span style={{ fontSize:14,fontWeight:500 }}>{r.pickup}</span>
-                      </div>
-                      <div style={{ display:'flex',gap:14,alignItems:'center' }}>
-                        <div style={{ width:12,height:12,borderRadius:'50%',border:'2.5px solid var(--danger)',background:'#fff',flexShrink:0,zIndex:1 }}></div>
-                        <span style={{ fontSize:14,fontWeight:500 }}>{r.drop}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  PAGE: SUPPORT
-    // ─────────────────────────────────────────────
-    const CATEGORIES = {
-      "Ride Issue": ["Driver didn't arrive","Driver went wrong route","Safety concern during ride","Driver was rude","Ride cancelled by driver"],
-      "Payment Issue": ["Charged incorrect amount","Need refund for cancelled ride","Payment failed but money deducted","Promotional code not applied","Receipt not received"],
-      "App Issue": ["App is crashing","Can't log in to account","Booking not working","App is slow","Push notifications not working"],
-      "Account Issue": ["Want to change phone number","Want to delete account","Account verification failed","Update profile details","Account temporarily blocked"],
-      "Other": ["Feedback about the service","Complaint about app","Partnership enquiry","General query","Something else"],
-    };
-
-    function Support() {
-      const { user } = useAuth();
-      const [category, setCategory] = useState('');
-      const [subIssue, setSubIssue] = useState('');
-      const [ticketId, setTicketId] = useState(null);
-      const [messages, setMessages] = useState([]);
-      const [ticketStatus, setTicketStatus] = useState('');
-      const [newMsg, setNewMsg] = useState('');
-      const chatRef = useRef(null);
-
-      useEffect(() => {
-        if (!user) return;
-        const ref = db.ref('support_tickets');
-        const unsub = ref.on('value', snap => {
-          const data = snap.val();
-          if (data) {
-            const open = Object.entries(data)
-              .map(([id,v]) => ({id,...v}))
-              .filter(t => t.userId === user.uid && t.status !== 'closed')
-              .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-            if (open.length > 0) {
-              setTicketId(open[0].id);
-              setTicketStatus(open[0].status);
-              const msgs = open[0].messages
-                ? Object.values(open[0].messages).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp))
-                : [];
-              setMessages(msgs);
-            }
-          }
-        });
-        return () => ref.off('value', unsub);
-      }, [user]);
-
-      useEffect(() => {
-        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-      }, [messages]);
-
-      const startChat = async () => {
-        if (!user || !category || !subIssue) return;
-        try {
-          const tRef = db.ref('support_tickets').push();
-          const id = tRef.key;
-          await tRef.set({ userId:user.uid, userName:user.displayName||'User', userEmail:user.email, issueCategory:category, subIssue, status:'open', createdAt:new Date().toISOString(), agentId:null, agentName:null });
-          await db.ref(`support_tickets/${id}/messages`).push({ text:`I need help with: ${subIssue}`, sender:'user', timestamp:new Date().toISOString() });
-          setTicketId(id);
-        } catch (err) { showToast(err.message, 'error'); }
-      };
-
-      const sendMsg = async (e) => {
-        e.preventDefault();
-        if (!ticketId || !newMsg.trim()) return;
-        try {
-          await db.ref(`support_tickets/${ticketId}/messages`).push({ text:newMsg.trim(), sender:'user', timestamp:new Date().toISOString() });
-          setNewMsg('');
-        } catch (err) { showToast(err.message, 'error'); }
-      };
-
-      const fmtTime = (iso) => new Date(iso).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
-
-      if (ticketId) {
-        return (
-          <div className="fade-in" style={{ maxWidth:640,margin:'0 auto',display:'flex',flexDirection:'column',height:'calc(100vh - 128px)' }}>
-            <div style={{ padding:'16px 1rem',borderBottom:'1px solid var(--border)',background:'#fff' }}>
-              <div style={{ fontWeight:700,fontSize:16 }}>Live Support</div>
-              <div style={{ fontSize:13,color:'var(--muted)',display:'flex',alignItems:'center',gap:6,marginTop:2 }}>
-                <div style={{ width:8,height:8,borderRadius:'50%',background: ticketStatus==='open' ? '#f59e0b' : '#22c55e' }}></div>
-                {ticketStatus === 'open' ? 'Waiting for an agent...' : 'Agent is online'}
-              </div>
-              <div style={{ fontSize:11,color:'var(--muted)',marginTop:4 }}>Ticket #{ticketId.slice(-6).toUpperCase()}</div>
-            </div>
-
-            <div ref={chatRef} style={{ flex:1,overflowY:'auto',padding:'1rem',background:'var(--bg2)',display:'flex',flexDirection:'column',gap:12 }}>
-              {messages.map((m,i) => (
-                <div key={i} style={{ display:'flex',justifyContent: m.sender==='user' ? 'flex-end' : 'flex-start' }}>
-                  <div>
-                    {m.sender !== 'user' && (
-                      <div style={{ fontSize:11,color:'var(--muted)',fontWeight:600,marginBottom:4,paddingLeft:4 }}>Support Agent</div>
-                    )}
-                    <div className={m.sender==='user' ? 'bubble-user' : 'bubble-agent'}>
-                      <div style={{ fontSize:14,lineHeight:1.5 }}>{m.text}</div>
-                      <div className="bubble-time">{fmtTime(m.timestamp)}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={sendMsg} style={{ padding:'12px 1rem',borderTop:'1px solid var(--border)',background:'#fff',display:'flex',gap:8 }}>
-              <input
-                value={newMsg} onChange={e=>setNewMsg(e.target.value)}
-                placeholder="Type your message..."
-                style={{ flex:1,borderRadius:999,padding:'10px 16px',border:'1.5px solid var(--border)',fontSize:14 }}
-              />
-              <button type="submit" className="btn btn-primary btn-pill" disabled={!newMsg.trim()} style={{ width:44,height:44,padding:0,fontSize:18 }}>➤</button>
-            </form>
-          </div>
-        );
+    html += '</table>';
+  } else {
+    html += '<p>Not joined.</p>';
+  }
+  html += '</div>';
+
+  // 4. Full Live Guess Log
+  html += '<div class="detail-section"><h3>Live Guess History</h3>';
+  if (room.guesses) {
+    html += '<div class="guess-log">';
+    // Convert object to array and sort by timestamp
+    var guessArr = [];
+    for (var key in room.guesses) { if (room.guesses.hasOwnProperty(key)) guessArr.push(room.guesses[key]); }
+    guessArr.sort(function(a, b) { return (a.timestamp || 0) - (b.timestamp || 0); });
+
+    for (var i = 0; i < guessArr.length; i++) {
+      var g = guessArr[i];
+      var pName = 'P' + g.playerNum;
+      if (g.playerNum === 1 && room.player1) pName = room.player1.name;
+      if (g.playerNum === 2 && room.player2) pName = room.player2.name;
+
+      if (room.gameMode === 'word') {
+        html += '<div class="guess-row">P' + g.playerNum + ' (' + pName + ') guessed letter: ' + g.letter + '</div>';
+      } else {
+        html += '<div class="guess-row">P' + g.playerNum + ' (' + pName + ') guessed number: ' + g.guess + ' -> Hint: ' + g.hint.toUpperCase() + '</div>';
       }
-
-      return (
-        <div className="fade-in" style={{ maxWidth:560,margin:'0 auto',padding:'2rem 1rem' }}>
-          <h1 style={{ fontSize:30,fontWeight:900,marginBottom:8 }}>Support</h1>
-          <p style={{ color:'var(--muted)',marginBottom:28 }}>We're here to help you</p>
-
-          {!category ? (
-            <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
-              <h2 style={{ fontWeight:700,fontSize:16,marginBottom:4 }}>What do you need help with?</h2>
-              {Object.keys(CATEGORIES).map(cat => (
-                <div key={cat} className="card" onClick={() => setCategory(cat)} style={{ padding:'16px 20px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',transition:'border-color 0.15s' }}>
-                  <div style={{ display:'flex',alignItems:'center',gap:14 }}>
-                    <div style={{ width:40,height:40,background:'rgba(245,197,24,0.12)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>
-                      {cat==='Ride Issue'?'🏍️':cat==='Payment Issue'?'💳':cat==='App Issue'?'📱':cat==='Account Issue'?'👤':'💬'}
-                    </div>
-                    <span style={{ fontWeight:600,fontSize:15 }}>{cat}</span>
-                  </div>
-                  <span style={{ color:'var(--muted)' }}>›</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="fade-in">
-              <button onClick={() => setCategory('')} style={{ background:'none',border:'none',color:'#111',fontWeight:600,cursor:'pointer',fontSize:14,marginBottom:20,display:'flex',alignItems:'center',gap:6,padding:0 }}>
-                ← Back
-              </button>
-              <h2 style={{ fontWeight:800,fontSize:20,marginBottom:20 }}>{category}</h2>
-
-              <div className="form-group">
-                <label>Select specific issue</label>
-                <select value={subIssue} onChange={e=>setSubIssue(e.target.value)} style={{ height:48,fontSize:15 }}>
-                  <option value="">Choose an issue...</option>
-                  {CATEGORIES[category].map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
-              </div>
-
-              <button className="btn btn-primary btn-full btn-lg" onClick={startChat} disabled={!subIssue} style={{ marginTop:12 }}>
-                Start Chat with Support
-              </button>
-            </div>
-          )}
-        </div>
-      );
     }
+    html += '</div>';
+  } else {
+    html += '<p style="font-size:12px; color:#666;">No guesses made yet.</p>';
+  }
+  html += '</div>';
 
-    // ─────────────────────────────────────────────
-    //  PAGE: PROFILE
-    // ─────────────────────────────────────────────
-    function Profile() {
-      const { user } = useAuth();
-      const { navigate } = useRouter();
-      const [profile, setProfile] = useState(null);
-      const [editing, setEditing] = useState(false);
-      const [editForm, setEditForm] = useState({ name:'', phone:'' });
-
-      useEffect(() => {
-        if (!user) return;
-        const ref = db.ref(`users/${user.uid}`);
-        const unsub = ref.on('value', snap => {
-          const d = snap.val();
-          if (d) { setProfile(d); setEditForm({ name:d.name||'', phone:d.phone||'' }); }
-        });
-        return () => ref.off('value', unsub);
-      }, [user]);
-
-      const handleLogout = async () => {
-        try { await auth.signOut(); navigate('/login'); }
-        catch (err) { showToast(err.message, 'error'); }
-      };
-
-      const handleSave = async () => {
-        try {
-          await db.ref(`users/${user.uid}`).update({ name:editForm.name, phone:editForm.phone });
-          setEditing(false);
-          showToast('Profile updated', 'success');
-        } catch (err) { showToast(err.message, 'error'); }
-      };
-
-      if (!profile) return <div style={{ minHeight:'60vh',display:'flex',alignItems:'center',justifyContent:'center' }}><div className="spinner" style={{ width:36,height:36,borderWidth:3 }}></div></div>;
-
-      return (
-        <div className="fade-in" style={{ maxWidth:560,margin:'0 auto',padding:'2rem 1rem' }}>
-          <h1 style={{ fontSize:30,fontWeight:900,marginBottom:28 }}>Profile</h1>
-
-          <div className="card" style={{ marginBottom:24,overflow:'hidden' }}>
-            <div style={{ height:80,background:'rgba(245,197,24,0.12)' }}></div>
-            <div style={{ padding:'0 1.5rem 1.5rem',marginTop:-44,display:'flex',flexDirection:'column',alignItems:'center' }}>
-              <div style={{ width:88,height:88,background:'var(--primary)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:36,border:'4px solid #fff',boxShadow:'0 4px 16px rgba(0,0,0,0.1)',marginBottom:16 }}>
-                {(profile.name||user?.email||'?').charAt(0).toUpperCase()}
-              </div>
-
-              {editing ? (
-                <div style={{ width:'100%' }}>
-                  <div className="form-group">
-                    <label>Full Name</label>
-                    <input value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})} placeholder="Your name" />
-                  </div>
-                  <div className="form-group">
-                    <label>Phone</label>
-                    <input value={editForm.phone} onChange={e=>setEditForm({...editForm,phone:e.target.value})} placeholder="+91XXXXXXXXXX" />
-                  </div>
-                  <div style={{ display:'flex',gap:8 }}>
-                    <button className="btn btn-primary btn-full" onClick={handleSave}>Save</button>
-                    <button className="btn btn-outline btn-full" onClick={() => setEditing(false)}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <h2 style={{ fontWeight:800,fontSize:22 }}>{profile.name || 'User'}</h2>
-                  <p style={{ color:'var(--muted)',fontSize:14,marginBottom:16 }}>{profile.phone || 'No phone added'}</p>
-                  <button className="btn btn-outline btn-sm btn-pill" onClick={() => setEditing(true)}>✏️ Edit Profile</button>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:24 }}>
-            {[
-              { icon:'🏍️', val: profile.totalRides||0, label:'Total Rides' },
-              { icon:'💳', val: `₹${profile.totalSpent||0}`, label:'Total Spent' },
-            ].map((s,i) => (
-              <div key={i} className="card" style={{ padding:'1.25rem',textAlign:'center',background:'var(--bg2)',border:'none' }}>
-                <div style={{ fontSize:28,marginBottom:8 }}>{s.icon}</div>
-                <div style={{ fontWeight:900,fontSize:24 }}>{s.val}</div>
-                <div style={{ fontSize:12,color:'var(--muted)',fontWeight:600 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="card" style={{ padding:'14px 16px',display:'flex',alignItems:'center',gap:14,marginBottom:24 }}>
-            <div style={{ background:'var(--bg2)',padding:8,borderRadius:10 }}>✉️</div>
-            <div>
-              <div style={{ fontSize:12,color:'var(--muted)',fontWeight:600 }}>Email Address</div>
-              <div style={{ fontWeight:600,fontSize:15 }}>{profile.email||user?.email}</div>
-            </div>
-          </div>
-
-          <button className="btn btn-danger-soft btn-full btn-lg" onClick={handleLogout}>
-            🚪 Logout
-          </button>
-        </div>
-      );
-    }
-
-    // ─────────────────────────────────────────────
-    //  APP ROOT
-    // ─────────────────────────────────────────────
-    function App() {
-      const { path } = useRouter();
-      const { user, loading } = useAuth();
-
-      const renderPage = () => {
-        if (path === '/') return <Landing />;
-        if (path === '/login') return <Login />;
-        if (path === '/signup') return <Signup />;
-        if (path === '/book') return <ProtectedRoute><Book /></ProtectedRoute>;
-        if (path.startsWith('/tracking/')) return <ProtectedRoute><Tracking /></ProtectedRoute>;
-        if (path === '/history') return <ProtectedRoute><History /></ProtectedRoute>;
-        if (path === '/support') return <ProtectedRoute><Support /></ProtectedRoute>;
-        if (path === '/profile') return <ProtectedRoute><Profile /></ProtectedRoute>;
-        return (
-          <div style={{ minHeight:'60vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16 }}>
-            <div style={{ fontSize:64 }}>🚫</div>
-            <h1 style={{ fontSize:28,fontWeight:900 }}>Page not found</h1>
-            <a href="#/" style={{ color:'#111',fontWeight:700 }}>Go Home</a>
-          </div>
-        );
-      };
-
-      return (
-        <div style={{ minHeight:'100vh',display:'flex',flexDirection:'column' }}>
-          <Navbar />
-          <main className="main-content" style={{ flex:1 }}>
-            {renderPage()}
-          </main>
-          <BottomNav />
-        </div>
-      );
-    }
-
-    function Root() {
-      return (
-        <Router>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </Router>
-      );
-    }
-
-    ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
-  </script>
+  container.innerHTML = html;
+}
+</script>
 </body>
 </html>
